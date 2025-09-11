@@ -1,0 +1,141 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36" version="26.0.12">
+  <diagram name="Page-1" id="TFQnUQWx7Qr1F3TZZiEn">
+    <mxGraphModel dx="5925" dy="1305" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="3300" pageHeight="4681" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="nsi26_xxT3evZW6AHxNs-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="orcqQFaE_2T4Ixrx3DVe-11" target="nsi26_xxT3evZW6AHxNs-1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="orcqQFaE_2T4Ixrx3DVe-11" target="orcqQFaE_2T4Ixrx3DVe-12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="orcqQFaE_2T4Ixrx3DVe-11" target="nsi26_xxT3evZW6AHxNs-4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="orcqQFaE_2T4Ixrx3DVe-11" target="nsi26_xxT3evZW6AHxNs-3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="orcqQFaE_2T4Ixrx3DVe-11" target="nsi26_xxT3evZW6AHxNs-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="orcqQFaE_2T4Ixrx3DVe-11" target="nsi26_xxT3evZW6AHxNs-19">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="orcqQFaE_2T4Ixrx3DVe-11" target="nsi26_xxT3evZW6AHxNs-21">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="orcqQFaE_2T4Ixrx3DVe-11" target="nsi26_xxT3evZW6AHxNs-41">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1300" y="230" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="orcqQFaE_2T4Ixrx3DVe-11" value="Manager" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="340" y="60" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="orcqQFaE_2T4Ixrx3DVe-12" value="See the dashbord it consists of charts" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="70" y="220" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-1" value="view the Stock(Pipes)" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="220" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-2" value="Sell request&amp;nbsp;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="480" y="220" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-3" value="Can add&amp;nbsp;manufactured into the stock" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="670" y="220" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-4" value="&amp;nbsp;View the Wrokers Progress" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="866" y="220" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-5" value="Create worker account can also deleate the account of worker" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="-120" y="220" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.37;entryY=-0.024;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="orcqQFaE_2T4Ixrx3DVe-11" target="nsi26_xxT3evZW6AHxNs-5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-19" value="A raw material&amp;nbsp; section where add&amp;nbsp; raw stock" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1050" y="220" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-21" value="Can able to give cost on the bases of formula" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="-300" y="220" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="nsi26_xxT3evZW6AHxNs-23" target="nsi26_xxT3evZW6AHxNs-25">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="30" y="720" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-28" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="nsi26_xxT3evZW6AHxNs-23" target="nsi26_xxT3evZW6AHxNs-26">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-30" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="nsi26_xxT3evZW6AHxNs-23" target="nsi26_xxT3evZW6AHxNs-29">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-23" value="Worker" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="340" y="520" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-25" value="Add the Stock&amp;nbsp;" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="70" y="690" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-26" value="View the stock" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="340" y="700" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-29" value="Sell request to manager" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="590" y="690" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-32" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="nsi26_xxT3evZW6AHxNs-31">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1020" y="690" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-42" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="nsi26_xxT3evZW6AHxNs-31" target="nsi26_xxT3evZW6AHxNs-36">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-43" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="nsi26_xxT3evZW6AHxNs-31" target="nsi26_xxT3evZW6AHxNs-37">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-44" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="nsi26_xxT3evZW6AHxNs-31" target="nsi26_xxT3evZW6AHxNs-35">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-45" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="nsi26_xxT3evZW6AHxNs-31" target="nsi26_xxT3evZW6AHxNs-34">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-46" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="nsi26_xxT3evZW6AHxNs-31" target="nsi26_xxT3evZW6AHxNs-38">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-48" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="nsi26_xxT3evZW6AHxNs-31">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="2160" y="690" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-31" value="Pipe" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="470" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-33" value="Grade of material used for&amp;nbsp;manufacturing" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="960" y="690" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-34" value="Length of pipe" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1200" y="690" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-35" value="Weigth for making" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1390" y="690" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-36" value="Size in inch&#39;s(2,2/23,3,4)" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="690" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-37" value="Name of the worker how manufactured" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1760" y="690" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-38" value="Date and time how when it was&amp;nbsp;manufactured" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1920" y="690" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-39" value="Automatic price accroding&amp;nbsp; on the bases of fromula" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="2100" y="690" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="nsi26_xxT3evZW6AHxNs-41" value="Can also able to change the sepicfic price of pipe" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1250" y="220" width="120" height="60" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

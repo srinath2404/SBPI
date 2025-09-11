@@ -72,22 +72,26 @@ exports.createSellRequest = async (req, res) => {
         });
     }
 };
-// Get all sell requests with pagination
+// Get sell requests with pagination (workers see only their own)
 exports.getSellRequests = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
+        const filter = {};
+        if (req.user && req.user.role === 'worker') {
+            filter.requestedBy = req.user._id;
+        }
 
         const [sellRequests, total] = await Promise.all([
-            SellRequest.find()
+            SellRequest.find(filter)
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limit)
                 .populate('requestedBy', 'name email')
                 .populate('approvedBy', 'name email')
                 .populate('rejectedBy', 'name email'),
-            SellRequest.countDocuments()
+            SellRequest.countDocuments(filter)
         ]);
 
         res.json({

@@ -1,8 +1,11 @@
-const pricingFormula = {
+let pricingFormula = {
+    // Base rate in Rs per kilogram, manager can update via API
+    baseRatePerKg: 64,
+    // Keep legacy fields to avoid breaking older clients; unused in new formula
     colorGradePrice: {
-        "GREEN": 15,    // Higher quality grade
-        "YELLOW": 12,   // Medium quality grade
-        "RED": 8        // Lower quality grade
+        "GREEN": 15,
+        "YELLOW": 12,
+        "RED": 8
     },
     sizeMultiplier: {
         "1 inch": 1.0,
@@ -14,27 +17,48 @@ const pricingFormula = {
     },
 };
 
-const calculatePrice = (colorGrade, sizeType, length) => {
-    const colorPrice = pricingFormula.colorGradePrice[colorGrade];
-    const sizeMultiplier = pricingFormula.sizeMultiplier[sizeType];
-
-    // Validate color grade
-    if (!colorPrice) {
-        throw new Error(`Invalid color grade. Available grades are: ${Object.keys(pricingFormula.colorGradePrice).join(', ')}`);
+// New pricing: price = weightKg * basePrice (from price chart)
+// For backwards compatibility, we keep params but only weight and size matter.
+const calculatePrice = async (colorGrade, sizeType, length, weight) => {
+    const w = Number(weight);
+    if (Number.isNaN(w)) {
+        throw new Error("Invalid weight. Weight must be a number.");
     }
-
-    // Validate size type
-    if (!sizeMultiplier) {
-        throw new Error(`Invalid size type. Available sizes are: ${Object.keys(pricingFormula.sizeMultiplier).join(', ')}`);
+    
+    // Try to get price from price chart first
+    try {
+        const PriceChart = require('../models/PriceChart');
+        const priceEntry = await PriceChart.findOne({ sizeType });
+        if (priceEntry) {
+            return w * priceEntry.basePrice;
+        }
+    } catch (e) {
+        // Fallback to old formula if price chart not available
     }
-
-    // Ensure length is a valid number
-    if (isNaN(length)) {
-        throw new Error("Invalid length. Length must be a number.");
+    
+    // Fallback to old formula
+    const rate = Number(pricingFormula.baseRatePerKg || 64);
+    if (rate <= 0) {
+        throw new Error("Invalid base rate configuration.");
     }
-
-    return colorPrice * sizeMultiplier * length;
+    return w * rate;
 };
 
-// Export calculatePrice as default
-module.exports = calculatePrice;
+const getPricingFormula = () => pricingFormula;
+
+const setPricingFormula = (next) => {
+    if (next && typeof next === 'object') {
+        pricingFormula = {
+            baseRatePerKg: typeof next.baseRatePerKg === 'number' ? next.baseRatePerKg : pricingFormula.baseRatePerKg,
+            colorGradePrice: next.colorGradePrice || pricingFormula.colorGradePrice,
+            sizeMultiplier: next.sizeMultiplier || pricingFormula.sizeMultiplier,
+        };
+    }
+    return pricingFormula;
+};
+
+module.exports = {
+    calculatePrice,
+    getPricingFormula,
+    setPricingFormula
+};

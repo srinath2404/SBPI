@@ -1,5 +1,7 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
+const { sendMail } = require("../utils/mailer");
 
 // Create Worker (Manager Only)
 exports.createWorker = async (req, res) => {
@@ -100,6 +102,9 @@ exports.requestPasswordReset = async (req, res) => {
 
         // Update worker document to mark password reset as requested
         worker.passwordResetRequested = true;
+        const token = crypto.randomBytes(32).toString('hex');
+        worker.resetPasswordToken = crypto.createHash('sha256').update(token).digest('hex');
+        worker.resetPasswordExpires = Date.now() + 1000 * 60 * 60; // 60 minutes
         await worker.save();
 
         res.json({ message: "Password reset request sent to manager" });
@@ -133,23 +138,36 @@ exports.resetWorkerPassword = async (req, res) => {
             return res.status(403).json({ message: "Not authorized. Manager access only." });
         }
 
-        const { workerId, newPassword } = req.body;
+        const { workerId, approve } = req.body;
         const worker = await User.findById(workerId);
 
         if (!worker || worker.role !== 'worker') {
             return res.status(404).json({ message: "Worker not found" });
         }
 
-        // Hash new password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(newPassword, salt);
+        if (!approve) {
+            // decline request
+            worker.passwordResetRequested = false;
+            worker.resetPasswordToken = undefined;
+            worker.resetPasswordExpires = undefined;
+            await worker.save();
+            return res.json({ message: 'Password reset request declined' });
+        }
 
-        // Update password and reset the request flag
-        worker.password = hashedPassword;
-        worker.passwordResetRequested = false;
+        // send reset email link
+        const rawToken = crypto.randomBytes(32).toString('hex');
+        worker.resetPasswordToken = crypto.createHash('sha256').update(rawToken).digest('hex');
+        worker.resetPasswordExpires = Date.now() + 1000 * 60 * 30; // 30 minutes
         await worker.save();
 
-        res.json({ message: "Worker password reset successfully" });
+        const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${rawToken}&id=${worker._id}`;
+        await sendMail({
+            to: worker.email,
+            subject: 'Password Reset Approved',
+            html: `<p>Your password reset was approved by manager.</p><p>Click <a href="${resetUrl}">here</a> to reset your password. Link expires in 30 minutes.</p>`
+        });
+
+        res.json({ message: 'Password reset email sent to worker' });
     } catch (error) {
         res.status(500).json({ message: "Server error", error: error.message });
     }

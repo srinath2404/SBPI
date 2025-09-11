@@ -1,24 +1,33 @@
-const pricingFormula = {
-    basePrice: 10, // Example base price per meter
-    sizeMultiplier: {
-        "1 inch": 1.0,
-        "1-1.4 inch": 1.2,
-        "2 inch": 1.5,
-        "2-1.2 inch": 1.8,
-        "3 inch": 2.0,
-        "4 inch": 2.5,
-    },
+const { getPricingFormula, setPricingFormula, calculatePrice } = require("../utils/priceCalculator");
+
+// Get Pricing Formula (Manager)
+exports.getPricingFormula = async (req, res) => {
+    try {
+        res.status(200).json(getPricingFormula());
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
 };
 
 // Update Pricing Formula (Manager)
 exports.updatePricingFormula = async (req, res) => {
     try {
-        const { basePrice, sizeMultiplier } = req.body;
+        const { colorGradePrice, sizeMultiplier, baseRatePerKg } = req.body;
 
-        if (basePrice) pricingFormula.basePrice = basePrice;
-        if (sizeMultiplier) pricingFormula.sizeMultiplier = sizeMultiplier;
+        const updated = setPricingFormula({ colorGradePrice, sizeMultiplier, baseRatePerKg: typeof baseRatePerKg === 'number' ? baseRatePerKg : undefined });
 
-        res.status(200).json({ message: "Pricing formula updated successfully", pricingFormula });
+        res.status(200).json({ message: "Pricing formula updated successfully", pricingFormula: updated });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+};
+
+// Compute price for preview
+exports.computePrice = async (req, res) => {
+    try {
+        const { colorGrade, sizeType, length, weight } = req.body;
+        const price = await calculatePrice(colorGrade, sizeType, Number(length || 0), Number(weight || 0));
+        res.json({ price });
     } catch (error) {
         res.status(400).json({ message: error.message });
     }

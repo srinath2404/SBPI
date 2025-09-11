@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const crypto = require("crypto");
 
 const userSchema = new mongoose.Schema({
     name: {
@@ -22,7 +23,9 @@ const userSchema = new mongoose.Schema({
     passwordResetRequested: {
         type: Boolean,
         default: false
-    }
+    },
+    resetPasswordToken: String,
+    resetPasswordExpires: Date
 });
 
 userSchema.methods.matchPassword = async function(enteredPassword) {
