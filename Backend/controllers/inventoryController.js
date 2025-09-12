@@ -4,6 +4,7 @@ const RawMaterialTransaction = require('../models/RawMaterialTransaction');
 const generateSerialNumber = require('../utils/serialNumberGenerator');
 const { calculatePrice } = require('../utils/priceCalculator');
 const { executeTransaction } = require('../config/db');
+const XLSX = require('xlsx');
 
 // Clean up completely sold pipes (remainingLength = 0) with ACID compliance
 const cleanupSoldPipes = async () => {
@@ -500,6 +501,293 @@ const getPipesByBatch = async (req, res) => {
     }
 };
 
+const getVal = (obj, keys, def = '') => {
+  for (const k of keys) {
+    if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') return obj[k];
+  }
+  return def;
+};
+
+const normalizeSheetRows = (sheet) => {
+  const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+  return rows.map((r) => ({
+    // Serial number (support various headers and typos)
+    serialNumber: String(getVal(r, [
+      'serialNumber','SerialNumber','SERIALNUMBER','serial','Serial','SERIAL',
+      'BNO','bno','SNO','sno',
+      'serial no','Serial no','Serial No','SERIAL NO',
+      'seiral no','Seiral No','Seiral no' // user-provided typo
+    ], '')).trim(),
+    // Color grade and sizeType may be missing in preview
+    colorGrade: String(getVal(r, ['colorGrade','ColorGrade','GRADE','Grade'], '')).trim(),
+    sizeType: String(getVal(r, ['sizeType','SizeType','SIZE','Size'], '')).trim(),
+    section: String(getVal(r, ['section','Section','SECTION'], 'A')).trim(),
+    // Length (support Length(MTR) variants)
+    length: Number(getVal(r, ['length','Length','MTR','mtr','Length(MTR)','length(mtr)','Length (MTR)'], 0)),
+    // Weight (support Weight(KG's) and typo "weigth(KG's)")
+    weight: Number(getVal(r, ['weight','Weight','WEIGHT','wt','WT','Weight(KG\'s)','Weight (KG\'s)','weigth(KG\'s)','Weigth(KG\'s)'], 0)),
+    manufacturingDate: getVal(r, ['manufacturingDate','ManufacturingDate','DATE','Date'], null),
+    batchNumber: String(getVal(r, ['batchNumber','BatchNumber','BATCH','Batch'], '')).trim()
+  }));
+};
+
+const validateRowPreview = (row) => {
+  const issues = [];
+  if (!(Number(row.length) > 0)) issues.push('Invalid length');
+  if (!(Number(row.weight) > 0)) issues.push('Invalid weight');
+  // colorGrade/sizeType optional at preview time
+  return { isValid: issues.length === 0, issues };
+};
+
+const validateRowCommit = (row) => {
+  const issues = [];
+  if (!row.colorGrade || !['A','B','C','D','a','b','c','d'].includes(row.colorGrade)) {
+    issues.push('Invalid or missing colorGrade');
+  }
+  if (!row.sizeType) issues.push('Missing sizeType');
+  if (!(Number(row.length) > 0)) issues.push('Invalid length');
+  if (!(Number(row.weight) > 0)) issues.push('Invalid weight');
+  return { isValid: issues.length === 0, issues };
+};
+
+// Preview Excel import (no save)
+const previewExcelImport = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Excel file is required (field name: file)' });
+    }
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const firstSheetName = workbook.SheetNames[0];
+    if (!firstSheetName) {
+      return res.status(400).json({ message: 'No sheets found in uploaded file' });
+    }
+    const sheet = workbook.Sheets[firstSheetName];
+    const normalizedRows = normalizeSheetRows(sheet);
+    if (!normalizedRows.length) {
+      return res.status(400).json({ message: 'No data rows found in the sheet' });
+    }
+
+    const preview = [];
+    for (let i = 0; i < normalizedRows.length; i++) {
+      const row = normalizedRows[i];
+      const validation = validateRowPreview(row);
+      let price = 0;
+      if (validation.isValid && row.colorGrade && row.sizeType) {
+        try {
+          price = await calculatePrice(String(row.colorGrade).toUpperCase(), row.sizeType, Number(row.length), Number(row.weight));
+        } catch {
+          price = Number(row.weight) * 64;
+        }
+      }
+      preview.push({ index: i, ...row, colorGrade: row.colorGrade ? String(row.colorGrade).toUpperCase() : '', price, validation });
+    }
+
+    res.json({ message: 'Preview generated', rows: preview, sheetName: firstSheetName, totalRows: preview.length });
+  } catch (error) {
+    console.error('Excel preview error:', error);
+    res.status(500).json({ message: 'Failed to generate preview', error: error.message });
+  }
+};
+
+// Commit Excel import from edited rows
+const commitExcelImport = async (req, res) => {
+  try {
+    const { rows } = req.body || {};
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return res.status(400).json({ message: 'rows array is required' });
+    }
+
+    const toInsert = [];
+    const errors = [];
+
+    // Validate rows strictly
+    for (let i = 0; i < rows.length; i++) {
+      const raw = rows[i] || {};
+      const row = {
+        serialNumber: String(raw.serialNumber || '').trim(),
+        colorGrade: String(raw.colorGrade || '').trim().toUpperCase(),
+        sizeType: String(raw.sizeType || '').trim(),
+        section: String(raw.section || 'A').trim(),
+        length: Number(raw.length || 0),
+        weight: Number(raw.weight || 0),
+        manufacturingDate: raw.manufacturingDate ? new Date(raw.manufacturingDate) : new Date(),
+        batchNumber: String(raw.batchNumber || '').trim()
+      };
+      const validation = validateRowCommit(row);
+      if (!validation.isValid) {
+        errors.push({ index: i, issues: validation.issues });
+        continue;
+      }
+      toInsert.push({ index: i, row });
+    }
+
+    if (toInsert.length === 0) {
+      return res.status(400).json({ message: 'No valid rows to import', errors });
+    }
+
+    const created = await executeTransaction(async (session) => {
+      const out = [];
+      for (const item of toInsert) {
+        const r = item.row;
+        let serial = r.serialNumber && r.serialNumber.length > 0 ? r.serialNumber : await generateSerialNumber();
+
+        const existing = await Pipe.findOne({ serialNumber: serial }).session(session);
+        if (existing) {
+          serial = await generateSerialNumber();
+        }
+
+        let price;
+        try {
+          price = await calculatePrice(String(r.colorGrade).toUpperCase(), r.sizeType, Number(r.length), Number(r.weight));
+        } catch {
+          price = Number(r.weight) * 64;
+        }
+
+        const doc = new Pipe({
+          serialNumber: serial,
+          colorGrade: String(r.colorGrade).toUpperCase(),
+          sizeType: r.sizeType,
+          section: r.section || 'A',
+          length: Number(r.length),
+          remainingLength: Number(r.length),
+          weight: Number(r.weight),
+          price,
+          manufacturingDate: r.manufacturingDate || new Date(),
+          batchNumber: r.batchNumber || null,
+          worker: req.user ? req.user._id : undefined
+        });
+
+        await doc.save({ session });
+        out.push({ index: item.index, serialNumber: doc.serialNumber, sizeType: doc.sizeType, length: doc.length, weight: doc.weight });
+      }
+      return out;
+    });
+
+    res.json({ message: `Imported ${created.length} pipes successfully`, imported: created.length, errors, details: created });
+  } catch (error) {
+    console.error('Excel commit error:', error);
+    res.status(500).json({ message: 'Failed to import edited rows', error: error.message });
+  }
+};
+
+// Import pipes from Excel (XLSX/XLS/CSV)
+const importPipesFromExcel = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'Excel file is required (field name: file)' });
+    }
+
+    // Read workbook from buffer
+    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const firstSheetName = workbook.SheetNames[0];
+    if (!firstSheetName) {
+      return res.status(400).json({ message: 'No sheets found in uploaded file' });
+    }
+    const sheet = workbook.Sheets[firstSheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return res.status(400).json({ message: 'No data rows found in the sheet' });
+    }
+
+    // Expected columns (case-insensitive): serialNumber (optional), colorGrade, sizeType, length, weight, manufacturingDate(optional), batchNumber(optional), section(optional)
+    const normalizedRows = rows.map((r) => ({
+      serialNumber: String(r.serialNumber || r.SerialNumber || r.SERIALNUMBER || r.SERIAL || r.BNO || '').trim(),
+      colorGrade: String(r.colorGrade || r.ColorGrade || r.GRADE || r.Grade || '').trim(),
+      sizeType: String(r.sizeType || r.SizeType || r.SIZE || r.Size || '').trim(),
+      section: String(r.section || r.Section || r.SECTION || 'A').trim(),
+      length: Number(r.length || r.Length || r.MTR || r.mtr || 0),
+      weight: Number(r.weight || r.Weight || r.WEIGHT || r.wt || r.WT || 0),
+      manufacturingDate: r.manufacturingDate || r.ManufacturingDate || r.DATE || r.Date || null,
+      batchNumber: String(r.batchNumber || r.BatchNumber || r.BATCH || r.Batch || '').trim()
+    }));
+
+    // Validate and prepare inserts
+    const toInsert = [];
+    const errors = [];
+
+    for (let i = 0; i < normalizedRows.length; i++) {
+      const row = normalizedRows[i];
+      const index = i + 2; // considering headers on row 1
+
+      if (!row.colorGrade || !['A','B','C','D','a','b','c','d'].includes(row.colorGrade)) {
+        errors.push(`Row ${index}: Invalid or missing colorGrade`);
+        continue;
+      }
+      if (!row.sizeType) {
+        errors.push(`Row ${index}: Missing sizeType`);
+        continue;
+      }
+      if (!(row.length > 0)) {
+        errors.push(`Row ${index}: Invalid length`);
+        continue;
+      }
+      if (!(row.weight > 0)) {
+        errors.push(`Row ${index}: Invalid weight`);
+        continue;
+      }
+
+      toInsert.push(row);
+    }
+
+    if (toInsert.length === 0) {
+      return res.status(400).json({ message: 'No valid rows to import', errors });
+    }
+
+    const result = await executeTransaction(async (session) => {
+      const created = [];
+      for (const r of toInsert) {
+        // Ensure serial number (autogenerate if empty)
+        let serial = r.serialNumber && r.serialNumber.length > 0 ? r.serialNumber : await generateSerialNumber();
+
+        // Unique check
+        const existing = await Pipe.findOne({ serialNumber: serial }).session(session);
+        if (existing) {
+          // Try regenerating if the provided serial collides
+          serial = await generateSerialNumber();
+        }
+
+        // Compute price
+        let price;
+        try {
+          price = await calculatePrice(String(r.colorGrade).toUpperCase(), r.sizeType, Number(r.length), Number(r.weight));
+        } catch {
+          const baseRate = 64;
+          price = Number(r.weight) * baseRate;
+        }
+
+        const doc = new Pipe({
+          serialNumber: serial,
+          colorGrade: String(r.colorGrade).toUpperCase(),
+          sizeType: r.sizeType,
+          section: r.section || 'A',
+          length: Number(r.length),
+          remainingLength: Number(r.length),
+          weight: Number(r.weight),
+          price,
+          manufacturingDate: r.manufacturingDate ? new Date(r.manufacturingDate) : new Date(),
+          batchNumber: r.batchNumber || null,
+          worker: req.user ? req.user._id : undefined
+        });
+
+        await doc.save({ session });
+        created.push({ serialNumber: doc.serialNumber, sizeType: doc.sizeType, length: doc.length, weight: doc.weight });
+      }
+      return created;
+    });
+
+    res.json({
+      message: `Imported ${result.length} pipes successfully`,
+      imported: result.length,
+      errors,
+      details: result
+    });
+  } catch (error) {
+    console.error('Excel import error:', error);
+    res.status(500).json({ message: 'Failed to import Excel', error: error.message });
+  }
+};
+
 // Helper function to determine inventory status
 const getInventoryStatus = (remainingLength, totalLength) => {
     if (remainingLength === 0) return 'sold';
@@ -516,5 +804,8 @@ module.exports = {
     updatePipe,
     updatePipePrice,
     manualCleanup,
-    getPipesByBatch
+    getPipesByBatch,
+    importPipesFromExcel,
+    previewExcelImport,
+    commitExcelImport
 };

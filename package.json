@@ -1,0 +1,12 @@
+{
+  "name": "sbpi",
+  "version": "1.0.0",
+  "description": "A comprehensive inventory management system for HDP pipe manufacturing, designed to manage raw materials, production, worker accounts, stock, and financial analysis through a structured process.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

@@ -12,10 +12,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
-  List,
-  ListItemButton,
-  ListItemText
+  DialogActions
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
@@ -39,12 +36,8 @@ function AddPipe() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [pricePreview, setPricePreview] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [parsedRows, setParsedRows] = useState([]);
-  const [pickerOpen, setPickerOpen] = useState(false);
   const [rateDialogOpen, setRateDialogOpen] = useState(false);
   const [baseRate, setBaseRate] = useState('');
-  const [debugInfo, setDebugInfo] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -76,7 +69,6 @@ function AddPipe() {
     }
     
     try {
-      console.log('📤 Sending form data:', formData);
       const response = await api.post('/inventory/add', formData);
       const successMessage = response.data?.message || '';
       const isSuccess = response.status === 201 || successMessage.includes('Pipe added successfully');
@@ -97,17 +89,11 @@ function AddPipe() {
         setTimeout(() => {
           setSuccess(false);
           navigate('/pipes');
-        }, 2500); // Increased delay to 2.5 seconds
+        }, 2500);
       }
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Error adding pipe. Please try again.';
       setError(errorMessage);
-      console.error('Error adding pipe:', error);
-      
-      // Log the full error response for debugging
-      if (error.response?.data) {
-        console.error('Full error response:', error.response.data);
-      }
     }
   };
 
@@ -117,104 +103,6 @@ function AddPipe() {
       ...prev,
       [name]: value
     }));
-  };
-
-  // OCR helpers (optional if you want to add later)
-  const fileToBase64 = (file) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-
-  const handleOcrUpload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      setError('Please select a valid image file (JPEG, PNG, etc.)');
-      return;
-    }
-    
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setError('Image file size should be less than 10MB');
-      return;
-    }
-    
-    try {
-      setUploading(true);
-      setError('');
-      
-      console.log('Processing image:', file.name, 'Size:', file.size, 'Type:', file.type);
-      
-      const imageUrl = await fileToBase64(file);
-      console.log('Image converted to base64, length:', imageUrl.length);
-      
-      // Use only AI OCR (no fallback)
-      console.log('Attempting AI OCR...');
-      const aiResp = await api.post('/ai-ocr/upload', { imageUrl });
-      const data = aiResp.data;
-      console.log('AI OCR successful:', data);
-      console.log('OCR response:', data);
-      
-      // Set debug info
-      const debugText = `OCR Response:
-Message: ${data?.message}
-AI Services Used: ${data?.aiServicesUsed ? data.aiServicesUsed.join(', ') : 'Tesseract.js (fallback)'}
-Confidence: ${data?.confidence ? `${(data.confidence * 100).toFixed(1)}%` : 'Unknown'}
-Raw Text: ${data?.rawText || 'None'}
-Corrected Text: ${data?.correctedText || 'None'}
-Parsed Rows: ${data?.parsedRows ? data.parsedRows.length : 0}
-Extracted Data: ${JSON.stringify(data?.extractedData || {}, null, 2)}
-Quality Analysis: ${JSON.stringify(data?.qualityAnalysis || {}, null, 2)}
-\n\nFormatted Table:\n${data?.formattedText || 'N/A'}`;
-      setDebugInfo(debugText);
-      
-      if (Array.isArray(data?.parsedRows) && data.parsedRows.length > 0) {
-        console.log('Found parsed rows:', data.parsedRows);
-        setParsedRows(data.parsedRows);
-        setPickerOpen(true);
-      } else if (data?.extractedData) {
-        console.log('Found extracted data:', data.extractedData);
-        const x = data.extractedData;
-        setFormData(prev => ({
-          ...prev,
-          serialNumber: x.serialNumber || prev.serialNumber,
-          colorGrade: x.colorGrade || prev.colorGrade,
-          sizeType: x.sizeType || prev.sizeType,
-          length: x.length ?? prev.length,
-          weight: x.weight ?? prev.weight,
-        }));
-        
-        // Show success message
-        setError('');
-        // You could add a success state here if needed
-      } else {
-        console.log('No structured data found, raw text:', data?.rawText);
-        setError('OCR completed but no structured data was found. Please check the image quality or format.');
-      }
-    } catch (err) {
-      console.error('OCR Error:', err);
-      const errorMessage = err.response?.data?.message || 'OCR extraction failed';
-      const errorDetails = err.response?.data?.details || '';
-      setError(`${errorMessage}${errorDetails ? `: ${errorDetails}` : ''}`);
-    } finally {
-      setUploading(false);
-      e.target.value = '';
-    }
-  };
-
-  const handlePickRow = (row) => {
-    setFormData(prev => ({
-      ...prev,
-      serialNumber: row?.bno ? String(row.bno) : prev.serialNumber,
-      length: row?.mtr ?? prev.length,
-      weight: row?.weight ?? prev.weight,
-    }));
-    setPickerOpen(false);
-    setParsedRows([]);
   };
 
   // Live price preview based on weight and size
@@ -261,21 +149,6 @@ Quality Analysis: ${JSON.stringify(data?.qualityAnalysis || {}, null, 2)}
                   setError(e.response?.data?.message || 'Failed to load pricing');
                 }
               }}>Pricing</Button>
-              <Button variant="outlined" component="label" disabled={uploading}>
-                {uploading ? 'Extracting…' : 'Extract from Image'}
-                <input hidden type="file" accept="image/*" onChange={handleOcrUpload} />
-              </Button>
-            </Box>
-            
-            {/* OCR Tips */}
-            <Box sx={{ mb: 2, p: 2, bgcolor: 'info.50', borderRadius: 1, border: '1px solid', borderColor: 'info.200' }}>
-              <Typography variant="body2" color="info.700" sx={{ fontWeight: 'medium', mb: 1 }}>
-                💡 Tips for Better OCR Results:
-              </Typography>
-              <Typography variant="body2" color="info.600" sx={{ fontSize: '0.875rem' }}>
-                • Use clear, high-contrast images • Ensure good lighting • Keep text straight and readable • 
-                • Use high resolution (min 300 DPI)
-              </Typography>
             </Box>
             <TextField
               fullWidth
@@ -361,23 +234,6 @@ Quality Analysis: ${JSON.stringify(data?.qualityAnalysis || {}, null, 2)}
               </Button>
             </Box>
           </form>
-          
-          {/* Debug Section */}
-          {debugInfo && (
-            <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.100', borderRadius: 1 }}>
-              <Typography variant="h6" sx={{ mb: 1 }}>OCR Debug Info</Typography>
-              <Typography variant="body2" component="pre" sx={{ 
-                whiteSpace: 'pre-wrap', 
-                fontSize: '0.8rem',
-                bgcolor: 'white',
-                p: 1,
-                borderRadius: 1,
-                border: '1px solid #ccc'
-              }}>
-                {debugInfo}
-              </Typography>
-            </Box>
-          )}
         </CardContent>
       </Card>
       <Dialog open={rateDialogOpen} onClose={() => setRateDialogOpen(false)} fullWidth maxWidth="xs">
@@ -403,24 +259,6 @@ Quality Analysis: ${JSON.stringify(data?.qualityAnalysis || {}, null, 2)}
               setError(e.response?.data?.message || 'Failed to update pricing');
             }
           }} variant="contained">Save</Button>
-        </DialogActions>
-      </Dialog>
-      <Dialog open={pickerOpen} onClose={() => setPickerOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Select a row to prefill</DialogTitle>
-        <DialogContent dividers>
-          <List>
-            {parsedRows.map((r) => (
-              <ListItemButton key={r.sno} onClick={() => handlePickRow(r)}>
-                <ListItemText
-                  primary={ 'SNO ' + r.sno + '  BNO ' + r.bno }
-                  secondary={ 'MTR ' + r.mtr + '   WEIGHT ' + r.weight }
-                />
-              </ListItemButton>
-            ))}
-          </List>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setPickerOpen(false)}>Close</Button>
         </DialogActions>
       </Dialog>
       <Snackbar

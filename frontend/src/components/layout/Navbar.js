@@ -2,6 +2,7 @@ import { AppBar, Toolbar, Typography, Button, Box, IconButton, Menu, MenuItem } 
 import MenuIcon from '@mui/icons-material/Menu';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
+import NotificationCenter from './NotificationCenter';
 
 function Navbar() {
   const navigate = useNavigate();
@@ -44,11 +45,22 @@ function Navbar() {
   return (
     <AppBar position="static">
       <Toolbar>
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          SBPI Management
+        <Typography 
+          variant="h6" 
+          component="div" 
+          sx={{ flexGrow: 1, cursor: 'pointer' }} 
+          onClick={() => {
+            // Redirect to appropriate dashboard based on user role
+            const userData = JSON.parse(localStorage.getItem('user') || '{}');
+            const userRole = userData.role || 'worker';
+            navigate(userRole === 'manager' ? '/dashboard' : '/worker-dashboard');
+          }}
+        >
+          Sri Balaji HDPE Pipes
         </Typography>
         {/* Desktop actions */}
         <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 2, alignItems: 'center' }}>
+          <NotificationCenter />
           {role === 'manager' && (
             <Button 
               color="inherit" 
@@ -75,10 +87,10 @@ function Navbar() {
           {role === 'manager' && (
             <Button 
               color="inherit" 
-              onClick={() => navigate('/pipes/bulk')}
+              onClick={() => navigate('/pipes/import-excel')}
               sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
             >
-              Bulk Pipes
+              Import Excel
             </Button>
           )}
           {role === 'manager' && (
@@ -99,13 +111,6 @@ function Navbar() {
               Pricing
             </Button>
           )}
-          <Button 
-            color="inherit" 
-            onClick={() => navigate('/ai-ocr-test')}
-            sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
-          >
-            AI OCR Test
-          </Button>
           <Button 
             color="inherit" 
             onClick={() => navigate('/sales')}
@@ -140,7 +145,7 @@ function Navbar() {
             <MenuItem onClick={() => { navigate('/worker-dashboard'); closeMenu(); }}>My Performance</MenuItem>
             <MenuItem onClick={() => { navigate('/pipes'); closeMenu(); }}>Pipes</MenuItem>
             {role === 'manager' && (
-              <MenuItem onClick={() => { navigate('/pipes/bulk'); closeMenu(); }}>Bulk Pipes</MenuItem>
+              <MenuItem onClick={() => { navigate('/pipes/import-excel'); closeMenu(); }}>Import Excel</MenuItem>
             )}
             <MenuItem onClick={() => { navigate('/sales'); closeMenu(); }}>Sales</MenuItem>
             {role === 'manager' && (

@@ -106,6 +106,25 @@ exports.requestPasswordReset = async (req, res) => {
         worker.resetPasswordToken = crypto.createHash('sha256').update(token).digest('hex');
         worker.resetPasswordExpires = Date.now() + 1000 * 60 * 60; // 60 minutes
         await worker.save();
+        
+        // Notify managers about password reset request
+        try {
+            const { createNotification } = require('../controllers/notificationController');
+            const managers = await User.find({ role: 'manager' });
+            
+            for (const manager of managers) {
+                await createNotification(
+                    manager._id,
+                    'Password Reset Request',
+                    `Worker ${worker.name} (${worker.email}) has requested a password reset.`,
+                    'info',
+                    { model: 'User', id: worker._id }
+                );
+            }
+        } catch (notifyError) {
+            console.error('Failed to send notification:', notifyError);
+            // Continue with the process even if notification fails
+        }
 
         res.json({ message: "Password reset request sent to manager" });
     } catch (error) {
@@ -145,12 +164,27 @@ exports.resetWorkerPassword = async (req, res) => {
             return res.status(404).json({ message: "Worker not found" });
         }
 
+        const { createNotification } = require('../controllers/notificationController');
+
         if (!approve) {
             // decline request
             worker.passwordResetRequested = false;
             worker.resetPasswordToken = undefined;
             worker.resetPasswordExpires = undefined;
             await worker.save();
+            
+            // Notify worker that request was declined
+            try {
+                await createNotification(
+                    worker._id,
+                    'Password Reset Request Declined',
+                    'Your password reset request was declined by the manager.',
+                    'warning'
+                );
+            } catch (notifyError) {
+                console.error('Failed to send notification:', notifyError);
+            }
+            
             return res.json({ message: 'Password reset request declined' });
         }
 
@@ -158,14 +192,34 @@ exports.resetWorkerPassword = async (req, res) => {
         const rawToken = crypto.randomBytes(32).toString('hex');
         worker.resetPasswordToken = crypto.createHash('sha256').update(rawToken).digest('hex');
         worker.resetPasswordExpires = Date.now() + 1000 * 60 * 30; // 30 minutes
+        worker.passwordResetRequested = false; // Clear the request flag
         await worker.save();
 
         const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${rawToken}&id=${worker._id}`;
-        await sendMail({
-            to: worker.email,
-            subject: 'Password Reset Approved',
-            html: `<p>Your password reset was approved by manager.</p><p>Click <a href="${resetUrl}">here</a> to reset your password. Link expires in 30 minutes.</p>`
-        });
+        
+        // Send email with reset link
+        try {
+            await sendMail({
+                to: worker.email,
+                subject: 'Password Reset Approved',
+                html: `<p>Your password reset was approved by manager.</p><p>Click <a href="${resetUrl}">here</a> to reset your password. Link expires in 30 minutes.</p>`
+            });
+        } catch (emailError) {
+            console.error('Failed to send email:', emailError);
+            // Continue even if email fails, as we'll send a notification too
+        }
+        
+        // Notify worker about approved request
+        try {
+            await createNotification(
+                worker._id,
+                'Password Reset Request Approved',
+                'Your password reset request was approved. Check your email for instructions.',
+                'success'
+            );
+        } catch (notifyError) {
+            console.error('Failed to send notification:', notifyError);
+        }
 
         res.json({ message: 'Password reset email sent to worker' });
     } catch (error) {

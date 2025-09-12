@@ -7,11 +7,14 @@ import Dashboard from './components/dashboard/Dashboard';
 import WorkerDashboard from './components/dashboard/WorkerDashboard';
 import PipeList from './components/pipes/PipeList';
 import AddPipe from './components/pipes/AddPipe';
-import BulkPipeProcessor from './components/pipes/BulkPipeProcessor';
 import WorkerList from './components/workers/WorkerList';
 import PriceChart from './components/pipes/PriceChart';
 import ResetPassword from './components/auth/ResetPassword';
-import AiOcrTest from './components/aiOcrTest';
+import BulkExcelImport from './components/pipes/BulkExcelImport';
+import { LoadingProvider } from './context/LoadingContext';
+import { useEffect } from 'react';
+import { useLoading } from './context/LoadingContext';
+import { setLoadingHandlers } from './utils/api';
 // import SellRequest from './components/sales/SellRequest';
 
 const theme = createTheme({
@@ -40,25 +43,39 @@ const ManagerRoute = ({children}) => {
   return user.role === 'manager' ? children : <Navigate to="/pipes" />;
 };
 
+// Component to initialize API loading handlers
+function ApiLoadingInitializer() {
+  const { showLoading, hideLoading } = useLoading();
+  
+  useEffect(() => {
+    // Set the loading handlers for the API
+    setLoadingHandlers({ showLoading, hideLoading });
+  }, [showLoading, hideLoading]);
+  
+  return null;
+}
+
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Router>
-        <Routes>
+      <LoadingProvider>
+        <ApiLoadingInitializer />
+        <Router>
+          <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/dashboard" element={<ManagerRoute><Dashboard /></ManagerRoute>} />
           <Route path="/worker-dashboard" element={<PrivateRoute><WorkerDashboard /></PrivateRoute>} />
           <Route path="/pipes" element={<PrivateRoute><PipeList /></PrivateRoute>} />
           <Route path="/pipes/add" element={<PrivateRoute><AddPipe /></PrivateRoute>} />
-          <Route path="/pipes/bulk" element={<ManagerRoute><BulkPipeProcessor /></ManagerRoute>} />
+          <Route path="/pipes/import-excel" element={<ManagerRoute><BulkExcelImport /></ManagerRoute>} />
           <Route path="/workers" element={<ManagerRoute><WorkerList /></ManagerRoute>} />
           <Route path="/pricing" element={<ManagerRoute><PriceChart /></ManagerRoute>} />
-          <Route path="/ai-ocr-test" element={<PrivateRoute><AiOcrTest /></PrivateRoute>} />
           <Route path="/sales" element={<PrivateRoute><SellRequest /></PrivateRoute>} />
           <Route path="/reset-password" element={<ResetPassword />} />
-        </Routes>
-      </Router>
+          </Routes>
+        </Router>
+      </LoadingProvider>
     </ThemeProvider>
   );
 }

@@ -83,7 +83,7 @@ function Login() {
       <Card sx={{ maxWidth: 400, width: '100%', mx: 2 }}>
         <CardContent>
           <Typography variant="h4" align="center" sx={{ mb: 3 }}>
-            SBPI Management
+            Sri Balaji HDPE Pipes
           </Typography>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <form onSubmit={handleLogin}>

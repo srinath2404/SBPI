@@ -145,10 +145,19 @@ exports.approveSellRequest = async (req, res) => {
                 });
             }
             
-            // Update pipe remaining length
-            await Pipe.findByIdAndUpdate(pipe._id, {
-                $inc: { remainingLength: -pipeItem.soldLength }
-            });
+            // If selling the entire pipe
+            if (pipe.remainingLength === pipeItem.soldLength) {
+                // Update pipe remaining length to 0
+                await Pipe.findByIdAndUpdate(pipe._id, {
+                    remainingLength: 0
+                });
+            } else {
+                // If selling part of the pipe
+                // Update the original pipe's remaining length
+                await Pipe.findByIdAndUpdate(pipe._id, {
+                    remainingLength: pipe.remainingLength - pipeItem.soldLength
+                });
+            }
         }
 
         // Update sell request status

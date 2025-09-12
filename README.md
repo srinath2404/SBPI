@@ -1,53 +1,123 @@
-# Getting Started with Create React App
+# Factory Inventory Management System
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A comprehensive inventory management system for HDP pipe manufacturing, designed to manage raw materials, production, worker accounts, stock, and financial analysis through a structured process.
 
-## Available Scripts
+## Overview
 
-In the project directory, you can run:
+This system provides a complete solution for factory inventory management with role-based access control, production tracking, sales management, and analytics dashboards.
 
-### `npm start`
+## Features
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+### System Roles
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+#### Manager
+- Create and delete worker accounts
+- View and manage stock
+- Approve and process sell requests
+- Add manufactured pipes into stock
+- Track work progress
+- Manage raw material inventory
+- Modify specific pipe prices
+- View dashboard with charts and analytics
+- Set pricing based on formula
 
-### `npm test`
+#### Worker
+- Log in to the system (created by the manager only)
+- Add stock details
+- View stock
+- Send sell requests to the manager
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Pipe Details
 
-### `npm run build`
+Each manufactured pipe has the following attributes:
+- Grade of material used for manufacturing
+- Size in inches (2, 2.2, 3, 3.4, etc.)
+- Length of the pipe
+- Weight required for making
+- Name of the worker who manufactured it
+- Date and time of manufacturing
+- Automatic price calculation based on formula
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### Core Functionalities
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- **Authentication System**: Role-based access control with manager and worker logins
+- **Worker Account Management**: Manager-controlled worker accounts
+- **Inventory Management**: Raw material tracking and pipe stock management
+- **Production Entry System**: Workers enter pipe manufacturing details with automatic serial number generation
+- **Stock and Sales Management**: Workers submit sell requests for manager approval
+- **Dashboard & Reporting**: Analytics dashboard with financial analysis and work progress tracking
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Technology Stack
 
-### `npm run eject`
+- **Frontend**: React.js with Material-UI
+- **Backend**: Node.js with Express
+- **Database**: MongoDB
+- **Authentication**: JWT (JSON Web Tokens)
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## Setup Instructions
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### Prerequisites
+- Node.js (v14 or higher)
+- MongoDB (local or Atlas)
+- npm or yarn package manager
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### Installation
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+1. Clone the repository
+   ```
+   git clone <repository-url>
+   cd SBPI
+   ```
 
-## Learn More
+2. Install backend dependencies
+   ```
+   cd Backend
+   npm install
+   ```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+3. Install frontend dependencies
+   ```
+   cd ../frontend
+   npm install
+   ```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+4. Create a `.env` file in the Backend directory with the following variables:
+   ```
+   MONGO_URI=<your-mongodb-connection-string>
+   PORT=5000
+   JWT_SECRET=<your-secret-key>
+   ```
 
-### Code Splitting
+### Running the Application
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+1. Start the backend server
+   ```
+   cd Backend
+   npm start
+   ```
+
+2. Start the frontend application (in a new terminal)
+   ```
+   cd frontend
+   npm start
+   ```
+
+3. Access the application at http://localhost:3000
+
+### Initial Setup
+
+1. Create the initial manager account:
+   ```
+   cd Backend
+   node scripts/initManager.js
+   ```
+
+2. (Optional) Initialize sample data for testing:
+   ```
+   cd Backend
+   node scripts/initSampleData.js
+   ```
+   This will create a sample worker account, raw materials, and pipe inventory for testing purposes.
 
 ### Analyzing the Bundle Size
 

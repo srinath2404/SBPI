@@ -15,9 +15,8 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 const rawMaterialRoutes = require("./routes/rawMaterialRoutes");
 const workProgressRoutes = require("./routes/workProgressRoutes");
 const priceRoutes = require("./routes/priceRoutes");
-const ocrRoutes = require("./routes/ocrRoutes");
-const aiOcrRoutes = require("./routes/aiOcrRoutes");
 const priceChartRoutes = require("./routes/priceChartRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 
 const app = express();
@@ -44,9 +43,8 @@ app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/raw-material", rawMaterialRoutes);
 app.use("/api/work-progress", workProgressRoutes);
 app.use("/api/price", priceRoutes);
-app.use("/api/ocr", ocrRoutes);
-app.use("/api/ai-ocr", aiOcrRoutes);
 app.use("/api/price-chart", priceChartRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 const PORT = process.env.PORT || 5000;
 

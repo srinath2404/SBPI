@@ -275,7 +275,7 @@ exports.getDashboardData = async (req, res) => {
 // Get Worker Dashboard Data
 exports.getWorkerDashboard = async (req, res) => {
     try {
-        const workerId = req.user.id;
+        const workerId = req.user._id;
         const currentMonth = new Date().getMonth() + 1;
         const currentYear = new Date().getFullYear();
 

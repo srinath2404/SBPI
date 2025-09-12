@@ -24,6 +24,7 @@ import {
 } from '@mui/material';
 import { Edit as EditIcon } from '@mui/icons-material';
 import api from '../../utils/api';
+import Navbar from '../layout/Navbar';
 
 function PriceChart() {
   const [priceChart, setPriceChart] = useState([]);
@@ -39,6 +40,11 @@ function PriceChart() {
   const [individualBasePriceDialog, setIndividualBasePriceDialog] = useState(false);
   const [editingSize, setEditingSize] = useState(null);
   const [newIndividualBasePrice, setNewIndividualBasePrice] = useState('');
+  
+  // New size type dialog
+  const [newSizeTypeDialog, setNewSizeTypeDialog] = useState(false);
+  const [newSizeType, setNewSizeType] = useState('');
+  const [newSizeBasePrice, setNewSizeBasePrice] = useState('64');
 
   useEffect(() => {
     loadPriceChart();
@@ -53,6 +59,36 @@ function PriceChart() {
       setError(err.response?.data?.message || 'Failed to load price chart');
     } finally {
       setLoading(false);
+    }
+  };
+  
+  const handleAddNewSizeType = async () => {
+    try {
+      if (!newSizeType.trim()) {
+        setError('Size type cannot be empty');
+        return;
+      }
+      
+      // Check if size type already exists
+      if (priceChart.some(item => item.sizeType.toLowerCase() === newSizeType.toLowerCase())) {
+        setError('This size type already exists');
+        return;
+      }
+      
+      const { data } = await api.post('/price-chart/size-type', { 
+        sizeType: newSizeType,
+        basePrice: Number(newSizeBasePrice) 
+      });
+      
+      // Update local state
+      setPriceChart(prev => [...prev, data.priceEntry]);
+      
+      setSuccess('New size type added successfully');
+      setNewSizeTypeDialog(false);
+      setNewSizeType('');
+      setNewSizeBasePrice('64');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to add new size type');
     }
   };
 
@@ -110,16 +146,27 @@ function PriceChart() {
   }
 
   return (
-    <Box sx={{ p: { xs: 2, md: 3 } }}>
+    <>
+      <Navbar />
+      <Box sx={{ p: { xs: 2, md: 3 } }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Price Chart</Typography>
-                 <Button 
-           variant="contained" 
-           onClick={openGlobalBasePriceDialog}
-           sx={{ minWidth: 120 }}
-         >
-           Update Global Base Price
-         </Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button 
+            variant="outlined" 
+            onClick={() => setNewSizeTypeDialog(true)}
+            sx={{ minWidth: 120 }}
+          >
+            Add New Size Type
+          </Button>
+          <Button 
+            variant="contained" 
+            onClick={openGlobalBasePriceDialog}
+            sx={{ minWidth: 120 }}
+          >
+            Update Global Base Price
+          </Button>
+        </Box>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -237,7 +284,39 @@ function PriceChart() {
           {success}
         </Alert>
       </Snackbar>
+      
+      {/* New Size Type Dialog */}
+      <Dialog open={newSizeTypeDialog} onClose={() => setNewSizeTypeDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Add New Size Type</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Add a new pipe size type with its base price. This will be available for selection when adding new pipes.
+          </Typography>
+          <TextField
+            fullWidth
+            label="New Size Type (e.g., 12 inch)"
+            value={newSizeType}
+            onChange={(e) => setNewSizeType(e.target.value)}
+            sx={{ mb: 2, mt: 1 }}
+          />
+          <TextField
+            fullWidth
+            label="Base Price (Rs/kg)"
+            type="number"
+            value={newSizeBasePrice}
+            onChange={(e) => setNewSizeBasePrice(e.target.value)}
+            inputProps={{ min: 0, step: 0.01 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setNewSizeTypeDialog(false)}>Cancel</Button>
+          <Button onClick={handleAddNewSizeType} variant="contained">
+            Add Size Type
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
+    </>
   );
 }
 

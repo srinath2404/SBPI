@@ -23,7 +23,9 @@ import {
   CardContent,
   InputAdornment,
   Collapse,
-  Alert
+  Alert,
+  Pagination,
+  Stack
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -45,6 +47,8 @@ function PipeList() {
   const [filteredPipes, setFilteredPipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [filters, setFilters] = useState({
     colorGrade: '',
     sizeType: '',
@@ -302,7 +306,7 @@ function PipeList() {
           <Grid item xs={12} sm={6} md={3}>
             <Card sx={{ bgcolor: 'secondary.main', color: 'white' }}>
               <CardContent>
-                <Typography variant="h4">${stats?.totalValue || 0}</Typography>
+                <Typography variant="h4">₹{stats?.totalValue || 0}</Typography>
                 <Typography variant="body2">Total Value</Typography>
               </CardContent>
             </Card>
@@ -491,14 +495,14 @@ function PipeList() {
                 <TableCell>Size Type</TableCell>
                 <TableCell>Length (m)</TableCell>
                 <TableCell>Weight (kg)</TableCell>
-                <TableCell>Price ($)</TableCell>
+                <TableCell>Price (₹)</TableCell>
                 <TableCell>Batch Number</TableCell>
                 <TableCell>Manufacturing Date</TableCell>
                 <TableCell>Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {Array.isArray(filteredPipes) && filteredPipes.map((pipe, index) => (
+              {Array.isArray(filteredPipes) && filteredPipes.slice((page - 1) * rowsPerPage, page * rowsPerPage).map((pipe, index) => (
                 <TableRow key={pipe?._id || `pipe-${index}`}>
                   <TableCell>{pipe?.serialNumber || '-'}</TableCell>
                   <TableCell>
@@ -515,7 +519,7 @@ function PipeList() {
                   <TableCell>{pipe?.sizeType || '-'}</TableCell>
                   <TableCell>{pipe?.length || '-'}</TableCell>
                   <TableCell>{pipe?.weight || '-'}</TableCell>
-                  <TableCell>${pipe?.price || 0}</TableCell>
+                  <TableCell>₹{pipe?.price || 0}</TableCell>
                   <TableCell>
                     {pipe?.batchNumber ? (
                       <Chip label={pipe.batchNumber} size="small" variant="outlined" />
@@ -557,6 +561,37 @@ function PipeList() {
             </TableBody>
           </Table>
         </TableContainer>
+        
+        <Stack spacing={2} sx={{ mt: 3, alignItems: 'center' }}>
+          <Pagination 
+            count={Math.ceil((filteredPipes?.length || 0) / rowsPerPage)} 
+            page={page} 
+            onChange={(e, newPage) => setPage(newPage)} 
+            color="primary" 
+          />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="body2">Rows per page:</Typography>
+            <TextField
+              select
+              value={rowsPerPage}
+              onChange={(e) => {
+                setRowsPerPage(Number(e.target.value));
+                setPage(1); // Reset to first page when changing rows per page
+              }}
+              size="small"
+              sx={{ width: 80 }}
+            >
+              {[5, 10, 25, 50, 100].map((option) => (
+                <MenuItem key={option} value={option}>
+                  {option}
+                </MenuItem>
+              ))}
+            </TextField>
+            <Typography variant="body2">
+              {filteredPipes?.length > 0 ? `${(page - 1) * rowsPerPage + 1}-${Math.min(page * rowsPerPage, filteredPipes.length)} of ${filteredPipes.length}` : '0 rows'}
+            </Typography>
+          </Box>
+        </Stack>
       </Box>
     </Box>
   );

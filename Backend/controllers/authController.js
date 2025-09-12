@@ -103,6 +103,20 @@ exports.resetPassword = async (req, res) => {
         user.resetPasswordExpires = undefined;
         user.passwordResetRequested = false;
         await user.save();
+        
+        // Send notification about successful password reset
+        try {
+            const { createNotification } = require('./notificationController');
+            await createNotification(
+                user._id,
+                'Password Reset Successful',
+                'Your password has been reset successfully.',
+                'success'
+            );
+        } catch (notifyError) {
+            console.error('Failed to send notification:', notifyError);
+            // Continue even if notification fails
+        }
 
         res.json({ message: 'Password reset successful' });
     } catch (error) {
