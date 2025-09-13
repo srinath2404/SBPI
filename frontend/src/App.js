@@ -11,10 +11,6 @@ import WorkerList from './components/workers/WorkerList';
 import PriceChart from './components/pipes/PriceChart';
 import ResetPassword from './components/auth/ResetPassword';
 import BulkExcelImport from './components/pipes/BulkExcelImport';
-import { LoadingProvider } from './context/LoadingContext';
-import { useEffect } from 'react';
-import { useLoading } from './context/LoadingContext';
-import { setLoadingHandlers } from './utils/api';
 // import SellRequest from './components/sales/SellRequest';
 
 const theme = createTheme({
@@ -43,26 +39,12 @@ const ManagerRoute = ({children}) => {
   return user.role === 'manager' ? children : <Navigate to="/pipes" />;
 };
 
-// Component to initialize API loading handlers
-function ApiLoadingInitializer() {
-  const { showLoading, hideLoading } = useLoading();
-  
-  useEffect(() => {
-    // Set the loading handlers for the API
-    setLoadingHandlers({ showLoading, hideLoading });
-  }, [showLoading, hideLoading]);
-  
-  return null;
-}
-
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <LoadingProvider>
-        <ApiLoadingInitializer />
-        <Router>
-          <Routes>
+      <Router>
+        <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/dashboard" element={<ManagerRoute><Dashboard /></ManagerRoute>} />
           <Route path="/worker-dashboard" element={<PrivateRoute><WorkerDashboard /></PrivateRoute>} />
@@ -73,9 +55,8 @@ function App() {
           <Route path="/pricing" element={<ManagerRoute><PriceChart /></ManagerRoute>} />
           <Route path="/sales" element={<PrivateRoute><SellRequest /></PrivateRoute>} />
           <Route path="/reset-password" element={<ResetPassword />} />
-          </Routes>
-        </Router>
-      </LoadingProvider>
+        </Routes>
+      </Router>
     </ThemeProvider>
   );
 }

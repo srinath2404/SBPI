@@ -328,7 +328,7 @@ const BulkPipeProcessor = () => {
                                                 <td>{pipe.sizeType}</td>
                                                 <td>{pipe.length}</td>
                                                 <td>{pipe.weight}</td>
-                                                <td>₹{pipe.price}</td>
+                                                <td>${pipe.price}</td>
                                                 <td>{pipe.batchNumber}</td>
                                             </tr>
                                         ))}

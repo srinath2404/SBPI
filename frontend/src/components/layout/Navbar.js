@@ -2,7 +2,7 @@ import { AppBar, Toolbar, Typography, Button, Box, IconButton, Menu, MenuItem } 
 import MenuIcon from '@mui/icons-material/Menu';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import NotificationCenter from './NotificationCenter';
+// NotificationCenter component has been removed
 
 function Navbar() {
   const navigate = useNavigate();
@@ -60,7 +60,6 @@ function Navbar() {
         </Typography>
         {/* Desktop actions */}
         <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 2, alignItems: 'center' }}>
-          <NotificationCenter />
           {role === 'manager' && (
             <Button 
               color="inherit" 

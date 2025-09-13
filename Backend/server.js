@@ -16,12 +16,15 @@ const rawMaterialRoutes = require("./routes/rawMaterialRoutes");
 const workProgressRoutes = require("./routes/workProgressRoutes");
 const priceRoutes = require("./routes/priceRoutes");
 const priceChartRoutes = require("./routes/priceChartRoutes");
-const notificationRoutes = require("./routes/notificationRoutes");
+// const notificationRoutes = require("./routes/notificationRoutes"); // Removed notification system
 
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: ['https://your-frontend-domain.vercel.app', 'http://localhost:3000'],
+  credentials: true
+}));
 app.use(helmet({
 	frameguard: false
 }));
@@ -44,7 +47,12 @@ app.use("/api/raw-material", rawMaterialRoutes);
 app.use("/api/work-progress", workProgressRoutes);
 app.use("/api/price", priceRoutes);
 app.use("/api/price-chart", priceChartRoutes);
-app.use("/api/notifications", notificationRoutes);
+// app.use("/api/notifications", notificationRoutes); // Removed notification system
+
+// Add a test route to verify the server is running
+app.get("/", (req, res) => {
+  res.send("Backend is working ✅");
+});
 
 const PORT = process.env.PORT || 5000;
 

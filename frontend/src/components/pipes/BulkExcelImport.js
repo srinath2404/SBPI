@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Box, Typography, Card, CardContent, Button, Alert, CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, TextField, Pagination, Stack, MenuItem } from '@mui/material';
 import api from '../../utils/api';
-import Navbar from '../layout/Navbar';
 
 function BulkExcelImport() {
   const [file, setFile] = useState(null);
@@ -114,12 +113,10 @@ function BulkExcelImport() {
   };
 
   return (
-    <>
-      <Navbar />
-      <Box sx={{ p: 3, maxWidth: 1100, mx: 'auto' }}>
-        <Typography variant="h4" gutterBottom>
-          Import Pipes from Excel (Preview, Edit, Commit)
-        </Typography>
+    <Box sx={{ p: 3, maxWidth: 1100, mx: 'auto' }}>
+      <Typography variant="h4" gutterBottom>
+        Import Pipes from Excel (Preview, Edit, Commit)
+      </Typography>
 
       <Card sx={{ mb: 3 }}>
         <CardContent>
@@ -257,7 +254,6 @@ function BulkExcelImport() {
         </Card>
       )}
     </Box>
-    </>
   );
 }
 
