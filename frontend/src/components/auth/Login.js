@@ -51,6 +51,13 @@ function Login() {
         setResetSuccess(true);
         setResetMessage(response.data?.message || 'Password reset instructions sent to your email');
       } catch (err) {
+        // Handle network errors
+        if (!err.response) {
+          setResetSuccess(false);
+          setResetMessage('Network error. Please check your internet connection and try again.');
+          return;
+        }
+        
         const msg = err.response?.data?.message || '';
         if (msg.includes('Workers must request reset')) {
           try {
@@ -58,6 +65,12 @@ function Login() {
             setResetSuccess(true);
             setResetMessage(resp2.data?.message || 'Password reset request sent to manager');
           } catch (workerErr) {
+            // Handle network errors for worker request
+            if (!workerErr.response) {
+              setResetSuccess(false);
+              setResetMessage('Network error. Please check your internet connection and try again.');
+              return;
+            }
             setResetSuccess(false);
             setResetMessage(workerErr.response?.data?.message || 'Failed to send worker reset request');
             return;
@@ -73,6 +86,12 @@ function Login() {
         setResetSuccess(false);
       }, 3000);
     } catch (error) {
+      // Handle network errors in the outer catch
+      if (!error.response) {
+        setResetSuccess(false);
+        setResetMessage('Network error. Please check your internet connection and try again.');
+        return;
+      }
       setResetSuccess(false);
       setResetMessage(error.response?.data?.message || 'Failed to send reset email');
     }
