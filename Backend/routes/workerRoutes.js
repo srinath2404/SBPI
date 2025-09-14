@@ -17,7 +17,7 @@ router.post("/create", protect, managerOnly, createWorker);
 router.delete("/delete/:id", protect, managerOnly, deleteWorker);  // Updated delete route path
 
 // Password reset routes
-router.post("/request-reset", requestPasswordReset);
+router.post("/request-reset", requestPasswordReset); // No auth required for workers to request password reset
 router.get("/reset-requests", protect, managerOnly, getPasswordResetRequests);
 router.post("/reset-password", protect, managerOnly, resetWorkerPassword);
 

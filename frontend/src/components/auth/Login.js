@@ -53,9 +53,15 @@ function Login() {
       } catch (err) {
         const msg = err.response?.data?.message || '';
         if (msg.includes('Workers must request reset')) {
-          const resp2 = await api.post('/workers/request-reset', { email: resetEmail });
-          setResetSuccess(true);
-          setResetMessage(resp2.data?.message || 'Password reset request sent to manager');
+          try {
+            const resp2 = await api.post('/workers/request-reset', { email: resetEmail });
+            setResetSuccess(true);
+            setResetMessage(resp2.data?.message || 'Password reset request sent to manager');
+          } catch (workerErr) {
+            setResetSuccess(false);
+            setResetMessage(workerErr.response?.data?.message || 'Failed to send worker reset request');
+            return;
+          }
         } else {
           throw err;
         }
@@ -83,7 +89,7 @@ function Login() {
       <Card sx={{ maxWidth: 400, width: '100%', mx: 2 }}>
         <CardContent>
           <Typography variant="h4" align="center" sx={{ mb: 3 }}>
-            SBPI Management
+            Sri Balaji HDPE Pipes
           </Typography>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <form onSubmit={handleLogin}>
@@ -129,6 +135,7 @@ function Login() {
       <Dialog 
         open={forgotPasswordOpen} 
         onClose={() => setForgotPasswordOpen(false)}
+        aria-modal="true"
       >
         <DialogTitle>Reset Password</DialogTitle>
         <DialogContent>

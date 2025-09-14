@@ -23,15 +23,32 @@ function WorkerDashboard() {
     try {
       setIsLoading(true);
       const response = await api.get('/dashboard/worker');
-      setData(response.data || {
+      console.log('Worker dashboard data:', response.data);
+      
+      // Set default empty data structure if response data is missing
+      const defaultData = {
+        monthlyProduction: [],
+        currentMonthStats: {},
+        recentWork: [],
+        qualityTrend: [],
+        performance: {}
+      };
+      
+      // Merge response data with default data to ensure all properties exist
+      setData({
+        ...defaultData,
+        ...response.data
+      });
+    } catch (error) {
+      console.error('Error fetching worker data:', error);
+      // Set default data on error
+      setData({
         monthlyProduction: [],
         currentMonthStats: {},
         recentWork: [],
         qualityTrend: [],
         performance: {}
       });
-    } catch (error) {
-      console.error('Error fetching worker data:', error);
     } finally {
       setIsLoading(false);
     }

@@ -108,6 +108,17 @@
     font-style: italic;
 }
 
+.apply-all-checkbox {
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+    font-size: 0.9rem;
+}
+
+.apply-all-checkbox input {
+    margin-right: 8px;
+}
+
 .input-with-button {
     display: flex;
     gap: 10px;

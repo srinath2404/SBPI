@@ -11,6 +11,7 @@ import WorkerList from './components/workers/WorkerList';
 import PriceChart from './components/pipes/PriceChart';
 import ResetPassword from './components/auth/ResetPassword';
 import BulkExcelImport from './components/pipes/BulkExcelImport';
+import TaskPages from './components/tasks/TaskPages';
 // import SellRequest from './components/sales/SellRequest';
 
 const theme = createTheme({
@@ -54,6 +55,7 @@ function App() {
           <Route path="/workers" element={<ManagerRoute><WorkerList /></ManagerRoute>} />
           <Route path="/pricing" element={<ManagerRoute><PriceChart /></ManagerRoute>} />
           <Route path="/sales" element={<PrivateRoute><SellRequest /></PrivateRoute>} />
+          <Route path="/tasks/*" element={<PrivateRoute><TaskPages /></PrivateRoute>} />
           <Route path="/reset-password" element={<ResetPassword />} />
         </Routes>
       </Router>

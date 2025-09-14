@@ -2,7 +2,7 @@ import { AppBar, Toolbar, Typography, Button, Box, IconButton, Menu, MenuItem } 
 import MenuIcon from '@mui/icons-material/Menu';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-// NotificationCenter component has been removed
+import NotificationCenter from '../notifications/NotificationCenter';
 
 function Navbar() {
   const navigate = useNavigate();
@@ -117,6 +117,14 @@ function Navbar() {
           >
             Sales
           </Button>
+          <Button 
+            color="inherit" 
+            onClick={() => navigate('/tasks')}
+            sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
+          >
+            Tasks
+          </Button>
+          <NotificationCenter />
           <Typography sx={{ mx: 2 }}>
             {userName}
           </Typography>
@@ -147,6 +155,7 @@ function Navbar() {
               <MenuItem onClick={() => { navigate('/pipes/import-excel'); closeMenu(); }}>Import Excel</MenuItem>
             )}
             <MenuItem onClick={() => { navigate('/sales'); closeMenu(); }}>Sales</MenuItem>
+            <MenuItem onClick={() => { navigate('/tasks'); closeMenu(); }}>Tasks</MenuItem>
             {role === 'manager' && (
               <>
                 <MenuItem onClick={() => { navigate('/dashboard'); closeMenu(); }}>Dashboard</MenuItem>

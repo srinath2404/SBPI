@@ -1,0 +1,36 @@
+.task-detail-container {
+    padding: 20px 0;
+}
+
+.task-description {
+    white-space: pre-line;
+    margin-bottom: 0;
+}
+
+.task-meta {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 15px;
+}
+
+.task-meta-item {
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.task-meta-item:last-child {
+    margin-bottom: 0;
+}
+
+.meta-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.status-select {
+    width: auto;
+    display: inline-block;
+    margin-left: 10px;
+}

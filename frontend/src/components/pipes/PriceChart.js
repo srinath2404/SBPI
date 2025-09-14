@@ -183,7 +183,7 @@ function PriceChart() {
       </Card>
 
              {/* Global Base Price Dialog */}
-       <Dialog open={globalBasePriceDialog} onClose={() => setGlobalBasePriceDialog(false)} maxWidth="sm" fullWidth>
+       <Dialog open={globalBasePriceDialog} onClose={() => setGlobalBasePriceDialog(false)} maxWidth="sm" fullWidth aria-modal="true">
          <DialogTitle>Update Global Base Price</DialogTitle>
          <DialogContent>
            <Typography variant="body2" sx={{ mb: 2 }}>
@@ -207,7 +207,7 @@ function PriceChart() {
        </Dialog>
 
                            {/* Individual Base Price Dialog */}
-        <Dialog open={individualBasePriceDialog} onClose={() => setIndividualBasePriceDialog(false)} maxWidth="sm" fullWidth>
+        <Dialog open={individualBasePriceDialog} onClose={() => setIndividualBasePriceDialog(false)} maxWidth="sm" fullWidth aria-modal="true">
           <DialogTitle>Update Base Price for {editingSize?.sizeType}</DialogTitle>
           <DialogContent>
             <Typography variant="body2" sx={{ mb: 2 }}>

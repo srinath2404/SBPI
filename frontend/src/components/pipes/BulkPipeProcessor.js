@@ -160,6 +160,18 @@ const BulkPipeProcessor = () => {
                                 value={formData.manufacturingDate}
                                 onChange={handleInputChange}
                             />
+                            <div className="apply-all-checkbox">
+                                <input 
+                                    type="checkbox" 
+                                    id="applyDateToAll" 
+                                    checked={true} 
+                                    disabled={true} 
+                                />
+                                <label htmlFor="applyDateToAll">Apply to all pipes</label>
+                            </div>
+                            <small className="form-help">
+                                This date will be applied to all pipes in the batch
+                            </small>
                         </div>
                     </div>
                 </div>
@@ -185,9 +197,18 @@ const BulkPipeProcessor = () => {
                                     </option>
                                 ))}
                             </select>
+                            <div className="apply-all-checkbox">
+                                <input 
+                                    type="checkbox" 
+                                    id="applySizeToAll" 
+                                    checked={true} 
+                                    disabled={true} 
+                                />
+                                <label htmlFor="applySizeToAll">Apply to all pipes</label>
+                            </div>
                             <small className="form-help">
                                 Since bulk processing typically involves pipes of the same size, 
-                                select the size for all pipes in this batch
+                                this will be applied to all pipes in the batch
                             </small>
                         </div>
                         <div className="form-group">
@@ -205,6 +226,15 @@ const BulkPipeProcessor = () => {
                                     </option>
                                 ))}
                             </select>
+                            <div className="apply-all-checkbox">
+                                <input 
+                                    type="checkbox" 
+                                    id="applyColorGradeToAll" 
+                                    checked={true} 
+                                    disabled={true} 
+                                />
+                                <label htmlFor="applyColorGradeToAll">Apply to all pipes</label>
+                            </div>
                             <small className="form-help">
                                 Default grade if not specified in the image. 
                                 Can be overridden by OCR data

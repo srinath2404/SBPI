@@ -1,0 +1,21 @@
+.task-list-container {
+    padding: 20px 0;
+}
+
+.task-table tbody tr {
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.task-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.unread-task {
+    background-color: #f0f7ff;
+    font-weight: 500;
+}
+
+.unread-task:hover {
+    background-color: #e6f0ff !important;
+}

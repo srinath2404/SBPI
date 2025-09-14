@@ -70,6 +70,8 @@ exports.forgotPassword = async (req, res) => {
             console.log('[DEV] SMTP not configured. Reset URL:', resetUrl);
             return res.json({ message: 'Password reset email simulated (SMTP not configured in backend). Check server logs for the link.' });
         }
+        
+        console.log('[INFO] Sending password reset email to:', user.email);
 
         const result = await sendMail({
             to: user.email,

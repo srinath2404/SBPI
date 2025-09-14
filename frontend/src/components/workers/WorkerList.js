@@ -142,7 +142,7 @@ function WorkerList() {
           </Table>
         </TableContainer>
 
-        <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+        <Dialog open={openDialog} onClose={() => setOpenDialog(false)} aria-modal="true">
           <DialogTitle>
             Add Worker (Manager Only)
           </DialogTitle>
@@ -182,7 +182,7 @@ function WorkerList() {
           </DialogActions>
         </Dialog>
 
-        <Dialog open={openResetDialog} onClose={() => setOpenResetDialog(false)}>
+        <Dialog open={openResetDialog} onClose={() => setOpenResetDialog(false)} aria-modal="true">
           <DialogTitle>Worker Password Reset Requests</DialogTitle>
           <DialogContent>
             {resetRequests.length === 0 && (

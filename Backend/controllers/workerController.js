@@ -94,10 +94,15 @@ exports.getWorkers = async (req, res) => {
 exports.requestPasswordReset = async (req, res) => {
     try {
         const { email } = req.body;
+        
+        if (!email) {
+            return res.status(400).json({ message: "Email is required" });
+        }
+        
         const worker = await User.findOne({ email, role: 'worker' });
         
         if (!worker) {
-            return res.status(404).json({ message: "Worker not found" });
+            return res.status(404).json({ message: "Worker not found with this email" });
         }
 
         // Update worker document to mark password reset as requested
@@ -180,11 +185,17 @@ exports.resetWorkerPassword = async (req, res) => {
         await worker.save();
 
         const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/reset-password?token=${rawToken}&id=${worker._id}`;
-        await sendMail({
+        console.log('[INFO] Sending worker password reset email to:', worker.email);
+        
+        const result = await sendMail({
             to: worker.email,
             subject: 'Password Reset Approved',
             html: `<p>Your password reset was approved by manager.</p><p>Click <a href="${resetUrl}">here</a> to reset your password. Link expires in 30 minutes.</p>`
         });
+        
+        if (result.previewUrl) {
+            console.log('[DEV] Preview worker reset email at:', result.previewUrl);
+        }
 
         res.json({ message: 'Password reset email sent to worker' });
     } catch (error) {

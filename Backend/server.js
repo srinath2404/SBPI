@@ -16,6 +16,7 @@ const rawMaterialRoutes = require("./routes/rawMaterialRoutes");
 const workProgressRoutes = require("./routes/workProgressRoutes");
 const priceRoutes = require("./routes/priceRoutes");
 const priceChartRoutes = require("./routes/priceChartRoutes");
+const taskRoutes = require("./routes/taskRoutes"); // Task management system
 // const notificationRoutes = require("./routes/notificationRoutes"); // Removed notification system
 
 
@@ -47,6 +48,7 @@ app.use("/api/raw-material", rawMaterialRoutes);
 app.use("/api/work-progress", workProgressRoutes);
 app.use("/api/price", priceRoutes);
 app.use("/api/price-chart", priceChartRoutes);
+app.use("/api/tasks", taskRoutes); // Task management system
 // app.use("/api/notifications", notificationRoutes); // Removed notification system
 
 // Add a test route to verify the server is running

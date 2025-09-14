@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Box, Typography, Card, CardContent, Button, Alert, CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, TextField, Pagination, Stack, MenuItem } from '@mui/material';
+import { Box, Typography, Card, CardContent, Button, Alert, CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, TextField, Pagination, Stack, MenuItem, FormControlLabel, Checkbox, Grid, InputLabel, Select, FormControl } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 import api from '../../utils/api';
 
 function BulkExcelImport() {
@@ -11,6 +12,29 @@ function BulkExcelImport() {
   const [commitResult, setCommitResult] = useState(null);
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  
+  // Bulk edit fields
+  const [bulkEdit, setBulkEdit] = useState({
+    colorGrade: '',
+    sizeType: '',
+    section: '',
+    batchNumber: '',
+    manufacturingDate: ''
+  });
+  
+  // Apply to all flags
+  const [applyToAll, setApplyToAll] = useState({
+    colorGrade: false,
+    sizeType: false,
+    section: false,
+    batchNumber: false,
+    manufacturingDate: false
+  });
+  
+  // Options for dropdowns
+  const colorGrades = ['A', 'B', 'C', 'D'];
+  const sizeTypes = ['1 inch', '1-1.4 inch', '2 inch', '2-1.2 inch', '3 inch', '4 inch'];
+  const sections = ['A', 'B', 'C', 'D', 'E', 'F'];
 
   const onFileChange = (e) => {
     const f = e.target.files?.[0];
@@ -38,7 +62,7 @@ function BulkExcelImport() {
       setCommitResult(null);
       const formData = new FormData();
       formData.append('file', file);
-      const { data } = await api.post('/inventory/preview-excel', formData, {
+      const { data } = await api.post('/pipes/preview-excel', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       setSheetName(data.sheetName);
@@ -49,11 +73,28 @@ function BulkExcelImport() {
         section: r.section || 'A',
         length: r.length || 0,
         weight: r.weight || 0,
-        manufacturingDate: r.manufacturingDate || '',
+        manufacturingDate: r.manufacturingDate || new Date().toISOString().split('T')[0],
         batchNumber: r.batchNumber || '',
         validation: r.validation || { isValid: true, issues: [] },
         price: r.price || 0
       })));
+      
+      // Reset bulk edit fields when new data is loaded
+      setBulkEdit({
+        colorGrade: '',
+        sizeType: '',
+        section: '',
+        batchNumber: '',
+        manufacturingDate: new Date().toISOString().split('T')[0]
+      });
+      
+      setApplyToAll({
+        colorGrade: false,
+        sizeType: false,
+        section: false,
+        batchNumber: false,
+        manufacturingDate: false
+      });
     } catch (e) {
       setError(e.response?.data?.message || 'Failed to preview Excel');
     } finally {
@@ -66,6 +107,7 @@ function BulkExcelImport() {
   };
 
   // Apply selected row values to all rows for specific fields
+  // Function to apply a row's values to all other rows
   const applyToAllRows = (sourceRowIdx, fields) => {
     if (sourceRowIdx < 0 || sourceRowIdx >= preview.length) return;
     
@@ -75,6 +117,7 @@ function BulkExcelImport() {
       
       const updates = {};
       fields.forEach(field => {
+        // Only apply fields that have values
         if (sourceRow[field] !== undefined) {
           updates[field] = sourceRow[field];
         }
@@ -82,6 +125,9 @@ function BulkExcelImport() {
       
       return { ...row, ...updates };
     }));
+    
+    // Show success message
+    setError(`Applied row ${sourceRowIdx + 1} values to all other rows`);
   };
 
   const onCommit = async () => {
@@ -110,6 +156,47 @@ function BulkExcelImport() {
       colorGrade: r.colorGrade || 'A',
       sizeType: r.sizeType || '2 inch'
     })));
+  };
+
+  // Function to apply bulk edits to all rows
+  const applyBulkEdit = () => {
+    setPreview(prev => prev.map(row => {
+      const updates = {};
+      
+      if (applyToAll.colorGrade && bulkEdit.colorGrade) {
+        updates.colorGrade = bulkEdit.colorGrade;
+      }
+      
+      if (applyToAll.sizeType && bulkEdit.sizeType) {
+        updates.sizeType = bulkEdit.sizeType;
+      }
+      
+      if (applyToAll.section && bulkEdit.section) {
+        updates.section = bulkEdit.section;
+      }
+      
+      if (applyToAll.batchNumber && bulkEdit.batchNumber) {
+        updates.batchNumber = bulkEdit.batchNumber;
+      }
+      
+      if (applyToAll.manufacturingDate && bulkEdit.manufacturingDate) {
+        updates.manufacturingDate = bulkEdit.manufacturingDate;
+      }
+      
+      return { ...row, ...updates };
+    }));
+    
+    // Show success message
+    setError(`Applied bulk edits to all rows`);
+    
+    // Reset checkboxes after applying
+    setApplyToAll({
+      colorGrade: false,
+      sizeType: false,
+      section: false,
+      batchNumber: false,
+      manufacturingDate: false
+    });
   };
 
   return (
@@ -148,6 +235,147 @@ function BulkExcelImport() {
           )}
         </CardContent>
       </Card>
+      
+      {preview.length > 0 && (
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="h6" gutterBottom>Apply to All Rows</Typography>
+            <Grid container spacing={2}>
+              {/* Color Grade */}
+              <Grid item xs={12} sm={6} md={4}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Color Grade</InputLabel>
+                  <Select
+                    value={bulkEdit.colorGrade}
+                    label="Color Grade"
+                    onChange={(e) => setBulkEdit({...bulkEdit, colorGrade: e.target.value})}
+                  >
+                    <MenuItem value=""><em>None</em></MenuItem>
+                    {colorGrades.map(grade => (
+                      <MenuItem key={grade} value={grade}>{grade}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={applyToAll.colorGrade}
+                      onChange={(e) => setApplyToAll({...applyToAll, colorGrade: e.target.checked})}
+                    />
+                  }
+                  label="Apply to all rows"
+                />
+              </Grid>
+              
+              {/* Size Type */}
+              <Grid item xs={12} sm={6} md={4}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Size Type</InputLabel>
+                  <Select
+                    value={bulkEdit.sizeType}
+                    label="Size Type"
+                    onChange={(e) => setBulkEdit({...bulkEdit, sizeType: e.target.value})}
+                  >
+                    <MenuItem value=""><em>None</em></MenuItem>
+                    {sizeTypes.map(size => (
+                      <MenuItem key={size} value={size}>{size}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={applyToAll.sizeType}
+                      onChange={(e) => setApplyToAll({...applyToAll, sizeType: e.target.checked})}
+                    />
+                  }
+                  label="Apply to all rows"
+                />
+              </Grid>
+              
+              {/* Section */}
+              <Grid item xs={12} sm={6} md={4}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Section</InputLabel>
+                  <Select
+                    value={bulkEdit.section}
+                    label="Section"
+                    onChange={(e) => setBulkEdit({...bulkEdit, section: e.target.value})}
+                  >
+                    <MenuItem value=""><em>None</em></MenuItem>
+                    {sections.map(section => (
+                      <MenuItem key={section} value={section}>{section}</MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={applyToAll.section}
+                      onChange={(e) => setApplyToAll({...applyToAll, section: e.target.checked})}
+                    />
+                  }
+                  label="Apply to all rows"
+                />
+              </Grid>
+              
+              {/* Batch Number */}
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Batch Number"
+                  value={bulkEdit.batchNumber}
+                  onChange={(e) => setBulkEdit({...bulkEdit, batchNumber: e.target.value})}
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={applyToAll.batchNumber}
+                      onChange={(e) => setApplyToAll({...applyToAll, batchNumber: e.target.checked})}
+                    />
+                  }
+                  label="Apply to all rows"
+                />
+              </Grid>
+              
+              {/* Manufacturing Date */}
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Manufacturing Date"
+                  type="date"
+                  value={bulkEdit.manufacturingDate}
+                  onChange={(e) => setBulkEdit({...bulkEdit, manufacturingDate: e.target.value})}
+                  InputLabelProps={{ shrink: true }}
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={applyToAll.manufacturingDate}
+                      onChange={(e) => setApplyToAll({...applyToAll, manufacturingDate: e.target.checked})}
+                    />
+                  }
+                  label="Apply to all rows"
+                />
+              </Grid>
+              
+              {/* Apply Button */}
+              <Grid item xs={12}>
+                <Button 
+                  variant="contained" 
+                  color="primary"
+                  onClick={applyBulkEdit}
+                  disabled={!Object.values(applyToAll).some(v => v)}
+                >
+                  Apply Changes
+                </Button>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+      )}
 
       {preview.length > 0 && (
         <Card>
@@ -173,31 +401,66 @@ function BulkExcelImport() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {preview.slice((page - 1) * rowsPerPage, page * rowsPerPage).map((r, idx) => (
+                  {preview.slice((page - 1) * rowsPerPage, page * rowsPerPage).map((r, idx) => {
+                    const actualIdx = idx + (page - 1) * rowsPerPage;
+                    return (
                     <TableRow key={idx} sx={{ bgcolor: r.validation?.isValid ? 'inherit' : 'rgba(255,0,0,0.05)' }}>
                       <TableCell>
-                        <TextField size="small" value={r.serialNumber} onChange={(e) => updateCell(idx, 'serialNumber', e.target.value)} />
+                        <TextField size="small" value={r.serialNumber} onChange={(e) => updateCell(actualIdx, 'serialNumber', e.target.value)} />
                       </TableCell>
                       <TableCell>
-                        <TextField size="small" value={r.colorGrade} onChange={(e) => updateCell(idx, 'colorGrade', e.target.value)} placeholder="A/B/C/D" />
+                        <FormControl fullWidth size="small">
+                          <Select
+                            value={r.colorGrade || ''}
+                            onChange={(e) => updateCell(actualIdx, 'colorGrade', e.target.value)}
+                            displayEmpty
+                          >
+                            <MenuItem value=""><em>None</em></MenuItem>
+                            {colorGrades.map(grade => (
+                              <MenuItem key={grade} value={grade}>{grade}</MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
                       </TableCell>
                       <TableCell>
-                        <TextField size="small" value={r.sizeType} onChange={(e) => updateCell(idx, 'sizeType', e.target.value)} placeholder="e.g., 2 inch" />
+                        <FormControl fullWidth size="small">
+                          <Select
+                            value={r.sizeType || ''}
+                            onChange={(e) => updateCell(actualIdx, 'sizeType', e.target.value)}
+                            displayEmpty
+                          >
+                            <MenuItem value=""><em>None</em></MenuItem>
+                            {sizeTypes.map(size => (
+                              <MenuItem key={size} value={size}>{size}</MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
                       </TableCell>
                       <TableCell>
-                        <TextField size="small" value={r.section} onChange={(e) => updateCell(idx, 'section', e.target.value)} />
+                        <FormControl fullWidth size="small">
+                          <Select
+                            value={r.section || ''}
+                            onChange={(e) => updateCell(actualIdx, 'section', e.target.value)}
+                            displayEmpty
+                          >
+                            <MenuItem value=""><em>None</em></MenuItem>
+                            {sections.map(section => (
+                              <MenuItem key={section} value={section}>{section}</MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
                       </TableCell>
                       <TableCell>
-                        <TextField size="small" type="number" value={r.length} onChange={(e) => updateCell(idx, 'length', e.target.value)} />
+                        <TextField size="small" type="number" value={r.length} onChange={(e) => updateCell(actualIdx, 'length', e.target.value)} />
                       </TableCell>
                       <TableCell>
-                        <TextField size="small" type="number" value={r.weight} onChange={(e) => updateCell(idx, 'weight', e.target.value)} />
+                        <TextField size="small" type="number" value={r.weight} onChange={(e) => updateCell(actualIdx, 'weight', e.target.value)} />
                       </TableCell>
                       <TableCell>
-                        <TextField size="small" value={r.manufacturingDate} onChange={(e) => updateCell(idx, 'manufacturingDate', e.target.value)} />
+                        <TextField size="small" type="date" value={r.manufacturingDate || ''} onChange={(e) => updateCell(actualIdx, 'manufacturingDate', e.target.value)} InputLabelProps={{ shrink: true }} />
                       </TableCell>
                       <TableCell>
-                        <TextField size="small" value={r.batchNumber} onChange={(e) => updateCell(idx, 'batchNumber', e.target.value)} />
+                        <TextField size="small" value={r.batchNumber || ''} onChange={(e) => updateCell(actualIdx, 'batchNumber', e.target.value)} />
                       </TableCell>
                       <TableCell>
                         <Typography variant="caption" color={r.validation?.isValid ? 'success.main' : 'error.main'}>
@@ -209,13 +472,13 @@ function BulkExcelImport() {
                         <Button 
                           size="small" 
                           variant="outlined" 
-                          onClick={() => applyToAllRows(idx, ['colorGrade', 'sizeType', 'section', 'batchNumber', 'manufacturingDate'])}
+                          onClick={() => applyToAllRows(actualIdx, ['colorGrade', 'sizeType', 'section', 'batchNumber', 'manufacturingDate'])}
                         >
                           Apply to All
                         </Button>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )})}
                 </TableBody>
               </Table>
             </Box>
