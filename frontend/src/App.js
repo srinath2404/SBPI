@@ -12,6 +12,7 @@ import PriceChart from './components/pipes/PriceChart';
 import ResetPassword from './components/auth/ResetPassword';
 import BulkExcelImport from './components/pipes/BulkExcelImport';
 import TaskPages from './components/tasks/TaskPages';
+import LoadingInitializer from './components/common/LoadingInitializer';
 // import SellRequest from './components/sales/SellRequest';
 
 const theme = createTheme({
@@ -44,6 +45,7 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      <LoadingInitializer />
       <Router>
         <Routes>
           <Route path="/" element={<Login />} />

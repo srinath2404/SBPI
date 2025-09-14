@@ -96,6 +96,43 @@ exports.updateSizeBasePrice = async (req, res) => {
     }
 };
 
+// Add new size type
+exports.addSizeType = async (req, res) => {
+    try {
+        const { sizeType, basePrice } = req.body;
+        
+        if (!sizeType) {
+            return res.status(400).json({ message: 'Size type is required' });
+        }
+        
+        if (!basePrice || isNaN(basePrice) || basePrice <= 0) {
+            return res.status(400).json({ message: 'Valid base price is required' });
+        }
+        
+        // Check if size type already exists
+        const existing = await PriceChart.findOne({ sizeType });
+        if (existing) {
+            return res.status(400).json({ message: 'Size type already exists' });
+        }
+        
+        // Create new price chart entry
+        const newEntry = new PriceChart({
+            sizeType,
+            basePrice: Number(basePrice),
+            createdBy: req.user?._id
+        });
+        
+        await newEntry.save();
+        
+        res.status(201).json({ 
+            message: 'New size type added successfully', 
+            priceEntry: newEntry 
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // Get price for specific size and weight
 exports.getPriceForSize = async (req, res) => {
     try {

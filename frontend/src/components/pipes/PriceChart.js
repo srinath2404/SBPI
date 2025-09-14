@@ -25,12 +25,13 @@ import {
 import { Edit as EditIcon } from '@mui/icons-material';
 import api from '../../utils/api';
 import Navbar from '../layout/Navbar';
+import { useLoading } from '../../context/LoadingContext';
 
 function PriceChart() {
   const [priceChart, setPriceChart] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const { showLoading, hideLoading } = useLoading();
   
   // Global base price dialog
   const [globalBasePriceDialog, setGlobalBasePriceDialog] = useState(false);
@@ -40,6 +41,11 @@ function PriceChart() {
   const [individualBasePriceDialog, setIndividualBasePriceDialog] = useState(false);
   const [editingSize, setEditingSize] = useState(null);
   const [newIndividualBasePrice, setNewIndividualBasePrice] = useState('');
+  
+  // New size type dialog
+  const [newSizeTypeDialog, setNewSizeTypeDialog] = useState(false);
+  const [newSizeType, setNewSizeType] = useState('');
+  const [newSizeBasePrice, setNewSizeBasePrice] = useState('');
 
   useEffect(() => {
     loadPriceChart();
@@ -47,13 +53,13 @@ function PriceChart() {
 
   const loadPriceChart = async () => {
     try {
-      setLoading(true);
-      const { data } = await api.get('/price-chart');
+      showLoading('Loading price chart...');
+      const { data } = await api.get('/price-chart', { skipLoading: true });
       setPriceChart(data);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load price chart');
     } finally {
-      setLoading(false);
+      hideLoading();
     }
   };
 
@@ -102,13 +108,33 @@ function PriceChart() {
     setGlobalBasePriceDialog(true);
   };
 
-  if (loading) {
-    return (
-      <Box sx={{ p: 3, textAlign: 'center' }}>
-        <Typography>Loading price chart...</Typography>
-      </Box>
-    );
-  }
+  const handleAddNewSizeType = async () => {
+    try {
+      if (!newSizeType || !newSizeBasePrice) {
+        setError('Size type and base price are required');
+        return;
+      }
+      
+      showLoading('Adding new size type...');
+      const { data } = await api.post('/price-chart/size-type', { 
+        sizeType: newSizeType,
+        basePrice: Number(newSizeBasePrice),
+        skipLoading: true
+      });
+      
+      setPriceChart([...priceChart, data.priceEntry]);
+      setSuccess('New size type added successfully');
+      setNewSizeTypeDialog(false);
+      setNewSizeType('');
+      setNewSizeBasePrice('');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to add new size type');
+    } finally {
+      hideLoading();
+    }
+  };
+
+
 
   return (
     <>
@@ -116,13 +142,22 @@ function PriceChart() {
       <Box sx={{ p: { xs: 2, md: 3 } }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">Price Chart</Typography>
-                 <Button 
-           variant="contained" 
-           onClick={openGlobalBasePriceDialog}
-           sx={{ minWidth: 120 }}
-         >
-           Update Global Base Price
-         </Button>
+        <Box>
+          <Button 
+            variant="contained" 
+            onClick={openGlobalBasePriceDialog}
+            sx={{ minWidth: 120, mr: 1 }}
+          >
+            Update Global Base Price
+          </Button>
+          <Button
+            variant="contained"
+            color="secondary"
+            onClick={() => setNewSizeTypeDialog(true)}
+          >
+            Add New Size Type
+          </Button>
+        </Box>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -228,7 +263,35 @@ function PriceChart() {
               Update
             </Button>
           </DialogActions>
-        </Dialog>
+      </Dialog>
+
+      {/* New Size Type Dialog */}
+      <Dialog open={newSizeTypeDialog} onClose={() => setNewSizeTypeDialog(false)} maxWidth="sm" fullWidth aria-modal="true">
+        <DialogTitle>Add New Size Type</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            label="Size Type (e.g., 3 inch)"
+            value={newSizeType}
+            onChange={(e) => setNewSizeType(e.target.value)}
+            sx={{ mb: 2, mt: 1 }}
+          />
+          <TextField
+            fullWidth
+            label="Base Price (Rs/kg)"
+            type="number"
+            value={newSizeBasePrice}
+            onChange={(e) => setNewSizeBasePrice(e.target.value)}
+            inputProps={{ min: 0, step: 0.01 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setNewSizeTypeDialog(false)}>Cancel</Button>
+          <Button onClick={handleAddNewSizeType} variant="contained" color="primary">
+            Add Size Type
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar
         open={!!success}

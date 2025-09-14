@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ocrAPI } from '../../utils/api';
 import './BulkPipeProcessor.css';
+import { useLoading } from '../../context/LoadingContext';
 
 const BulkPipeProcessor = () => {
     const [formData, setFormData] = useState({
@@ -11,9 +12,9 @@ const BulkPipeProcessor = () => {
     });
     const [imageFile, setImageFile] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
-    const [isProcessing, setIsProcessing] = useState(false);
     const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
+    const { showLoading, hideLoading } = useLoading();
 
     // Size options for bulk processing
     const sizeOptions = [
@@ -92,7 +93,7 @@ const BulkPipeProcessor = () => {
             return;
         }
 
-        setIsProcessing(true);
+        showLoading('Processing bulk pipes...');
         setError(null);
         setResult(null);
 
@@ -105,7 +106,8 @@ const BulkPipeProcessor = () => {
                 batchNumber: formData.batchNumber,
                 manufacturingDate: formData.manufacturingDate || new Date().toISOString(),
                 sizeType: formData.sizeType, // Pass selected size
-                defaultColorGrade: formData.defaultColorGrade // Pass default color grade
+                defaultColorGrade: formData.defaultColorGrade, // Pass default color grade
+                skipLoading: true
             });
 
             // Axios returns { data, status, headers, ... }
@@ -115,7 +117,7 @@ const BulkPipeProcessor = () => {
             setError(err.message || 'Failed to process bulk pipes');
             console.error('Bulk processing error:', err);
         } finally {
-            setIsProcessing(false);
+            hideLoading();
         }
     };
 
@@ -292,15 +294,14 @@ const BulkPipeProcessor = () => {
                         type="button"
                         className="process-btn"
                         onClick={processBulkPipes}
-                        disabled={isProcessing || !imageFile || !formData.batchNumber || !formData.sizeType}
+                        disabled={!imageFile || !formData.batchNumber || !formData.sizeType}
                     >
-                        {isProcessing ? 'Processing...' : 'Process Bulk Pipes with AI'}
+                        Process Bulk Pipes with AI
                     </button>
                     <button
                         type="button"
                         className="clear-btn"
                         onClick={clearForm}
-                        disabled={isProcessing}
                     >
                         Clear Form
                     </button>

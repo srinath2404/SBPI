@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
+import { useLoading } from '../../context/LoadingContext';
 
 function Login() {
   const [credentials, setCredentials] = useState({ email: '', password: '' });
@@ -23,18 +24,29 @@ function Login() {
   const [resetSuccess, setResetSuccess] = useState(false);
   const [resetMessage, setResetMessage] = useState('');
   const navigate = useNavigate();
+  const { showLoading, hideLoading } = useLoading();
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
     
     try {
-      const response = await api.post('/auth/login', credentials);
+      showLoading('Logging in...');
+      const response = await api.post('/auth/login', { ...credentials, skipLoading: true });
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
-      navigate('/dashboard');
+      
+      // Determine where to navigate based on user role
+      const user = response.data.user;
+      if (user.role === 'manager') {
+        navigate('/pipes'); // Changed from /dashboard to /pipes
+      } else {
+        navigate('/pipes');
+      }
     } catch (error) {
       setError(error.response?.data?.message || 'Login failed');
+    } finally {
+      hideLoading();
     }
   };
 
@@ -45,9 +57,10 @@ function Login() {
         return;
       }
 
+      showLoading('Processing password reset...');
       // Try manager flow first; if worker, send request to manager
       try {
-        const response = await api.post('/auth/forgot-password', { email: resetEmail });
+        const response = await api.post('/auth/forgot-password', { email: resetEmail, skipLoading: true });
         setResetSuccess(true);
         setResetMessage(response.data?.message || 'Password reset instructions sent to your email');
       } catch (err) {
@@ -74,6 +87,8 @@ function Login() {
             setResetSuccess(false);
             setResetMessage(workerErr.response?.data?.message || 'Failed to send worker reset request');
             return;
+          } finally {
+            hideLoading();
           }
         } else {
           throw err;

@@ -13,15 +13,20 @@ async function getTransporter() {
     if (service || (host && user && pass)) {
         const port = Number(process.env.SMTP_PORT || 587);
         const secure = String(process.env.SMTP_SECURE || '').toLowerCase() === 'true' || port === 465;
-        transporterPromise = Promise.resolve(nodemailer.createTransport(
-            service ? { service, auth: { user, pass } } : {
-                host,
-                port,
-                secure,
-                auth: { user, pass }
-            }
-        ));
-        return transporterPromise;
+        try {
+            transporterPromise = Promise.resolve(nodemailer.createTransport(
+                service ? { service, auth: { user, pass } } : {
+                    host,
+                    port,
+                    secure,
+                    auth: { user, pass }
+                }
+            ));
+            return transporterPromise;
+        } catch (error) {
+            console.error('Error creating transporter:', error);
+            throw error;
+        }
     }
 
     // Fallback to Ethereal test account (emails go to preview URL)
@@ -40,15 +45,36 @@ async function getTransporter() {
 }
 
 const sendMail = async ({ to, subject, html }) => {
-    const transporter = await getTransporter();
-    const info = await transporter.sendMail({
-        from: process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@example.com',
-        to,
-        subject,
-        html
-    });
-    const previewUrl = nodemailer.getTestMessageUrl ? nodemailer.getTestMessageUrl(info) : undefined;
-    return { messageId: info.messageId, previewUrl };
+    try {
+        const transporter = await getTransporter();
+        
+        // Log SMTP configuration for debugging
+        console.log('SMTP Configuration:', {
+            host: process.env.SMTP_HOST,
+            port: process.env.SMTP_PORT,
+            secure: process.env.SMTP_SECURE,
+            user: process.env.SMTP_USER ? '***' : undefined, // Hide actual credentials
+            from: process.env.SMTP_FROM
+        });
+        
+        const info = await transporter.sendMail({
+            from: process.env.SMTP_FROM || process.env.SMTP_USER || 'no-reply@example.com',
+            to,
+            subject,
+            html
+        });
+        
+        console.log('Email sent successfully:', info.messageId);
+        const previewUrl = nodemailer.getTestMessageUrl ? nodemailer.getTestMessageUrl(info) : undefined;
+        if (previewUrl) {
+            console.log('Preview URL:', previewUrl);
+        }
+        
+        return { messageId: info.messageId, previewUrl };
+    } catch (error) {
+        console.error('Failed to send email:', error);
+        throw error;
+    }
 };
 
 module.exports = { sendMail };
