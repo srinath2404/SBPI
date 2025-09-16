@@ -1,16 +1,8 @@
 import { useState, useEffect } from 'react';
 import {
   Box,
-  Typography,
   Card,
   CardContent,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   Button,
   Dialog,
   DialogTitle,
@@ -20,18 +12,22 @@ import {
   Alert,
   Snackbar,
   IconButton,
-  Tooltip
+  Tooltip,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
 import { Edit as EditIcon } from '@mui/icons-material';
 import api from '../../utils/api';
 import Navbar from '../layout/Navbar';
-import { useLoading } from '../../context/LoadingContext';
+import ResponsiveContainer from '../common/ResponsiveContainer';
+import ResponsiveTypography from '../common/ResponsiveTypography';
+import ResponsiveTable from '../common/ResponsiveTable';
 
 function PriceChart() {
   const [priceChart, setPriceChart] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const { showLoading, hideLoading } = useLoading();
   
   // Global base price dialog
   const [globalBasePriceDialog, setGlobalBasePriceDialog] = useState(false);
@@ -43,9 +39,9 @@ function PriceChart() {
   const [newIndividualBasePrice, setNewIndividualBasePrice] = useState('');
   
   // New size type dialog
-  const [newSizeTypeDialog, setNewSizeTypeDialog] = useState(false);
+  const [newSizeDialog, setNewSizeDialog] = useState(false);
   const [newSizeType, setNewSizeType] = useState('');
-  const [newSizeBasePrice, setNewSizeBasePrice] = useState('');
+  const [newSizeBasePrice, setNewSizeBasePrice] = useState('64');
 
   useEffect(() => {
     loadPriceChart();
@@ -53,13 +49,13 @@ function PriceChart() {
 
   const loadPriceChart = async () => {
     try {
-      showLoading('Loading price chart...');
-      const { data } = await api.get('/price-chart', { skipLoading: true });
+      setLoading(true);
+      const { data } = await api.get('/price-chart');
       setPriceChart(data);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load price chart');
     } finally {
-      hideLoading();
+      setLoading(false);
     }
   };
 
@@ -107,55 +103,78 @@ function PriceChart() {
     setNewGlobalBasePrice(String(priceChart[0]?.basePrice || '64'));
     setGlobalBasePriceDialog(true);
   };
-
+  
   const handleAddNewSizeType = async () => {
+    if (!newSizeType.trim()) {
+      setError('Size type cannot be empty');
+      return;
+    }
+    
     try {
-      if (!newSizeType || !newSizeBasePrice) {
-        setError('Size type and base price are required');
-        return;
-      }
-      
-      showLoading('Adding new size type...');
       const { data } = await api.post('/price-chart/size-type', { 
-        sizeType: newSizeType,
-        basePrice: Number(newSizeBasePrice),
-        skipLoading: true
+        sizeType: newSizeType.trim(),
+        basePrice: Number(newSizeBasePrice) 
       });
       
-      setPriceChart([...priceChart, data.priceEntry]);
+      setPriceChart([...priceChart, data.newSizeType]);
       setSuccess('New size type added successfully');
-      setNewSizeTypeDialog(false);
+      setNewSizeDialog(false);
       setNewSizeType('');
-      setNewSizeBasePrice('');
+      setNewSizeBasePrice('64');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to add new size type');
-    } finally {
-      hideLoading();
     }
   };
+  
+  const openNewSizeDialog = () => {
+    setNewSizeType('');
+    setNewSizeBasePrice('64');
+    setNewSizeDialog(true);
+  };
 
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  if (loading) {
+    return (
+      <ResponsiveContainer sx={{ textAlign: 'center' }}>
+        <ResponsiveTypography>Loading price chart...</ResponsiveTypography>
+      </ResponsiveContainer>
+    );
+  }
 
   return (
     <>
       <Navbar />
-      <Box sx={{ p: { xs: 2, md: 3 } }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">Price Chart</Typography>
-        <Box>
+      <ResponsiveContainer>
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: isMobile ? 'column' : 'row', 
+        justifyContent: 'space-between', 
+        alignItems: isMobile ? 'flex-start' : 'center', 
+        mb: 3,
+        gap: 2
+      }}>
+        <ResponsiveTypography variant="h4">Price Chart</ResponsiveTypography>
+        <Box sx={{ 
+          display: 'flex', 
+          flexDirection: isMobile ? 'column' : 'row', 
+          gap: 2,
+          width: isMobile ? '100%' : 'auto'
+        }}>
+          <Button 
+            variant="outlined" 
+            onClick={openNewSizeDialog}
+            sx={{ minWidth: 120 }}
+          >
+            Add New Size Type
+          </Button>
           <Button 
             variant="contained" 
             onClick={openGlobalBasePriceDialog}
-            sx={{ minWidth: 120, mr: 1 }}
+            sx={{ minWidth: 120 }}
           >
             Update Global Base Price
-          </Button>
-          <Button
-            variant="contained"
-            color="secondary"
-            onClick={() => setNewSizeTypeDialog(true)}
-          >
-            Add New Size Type
           </Button>
         </Box>
       </Box>
@@ -165,89 +184,102 @@ function PriceChart() {
 
       <Card>
         <CardContent>
-          <Typography variant="h6" sx={{ mb: 2 }}>
+          <ResponsiveTypography variant="h6" sx={{ mb: 2 }}>
             Current Pricing Structure
-          </Typography>
+          </ResponsiveTypography>
           
-          <TableContainer component={Paper} variant="outlined">
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell><strong>Size Type</strong></TableCell>
-                                     <TableCell align="right"><strong>Base Price (Rs/kg)</strong></TableCell>
-                   <TableCell align="right"><strong>Last Updated</strong></TableCell>
-                  <TableCell align="center"><strong>Actions</strong></TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {priceChart.map((size) => (
-                  <TableRow key={size.sizeType}>
-                    <TableCell>{size.sizeType}</TableCell>
-                                       <TableCell align="right">
-                     <strong>₹{size.basePrice}</strong>
-                   </TableCell>
-                   <TableCell align="right">
-                     {new Date(size.lastUpdated).toLocaleDateString()}
-                   </TableCell>
-                    <TableCell align="center">
-                                               <Tooltip title="Edit base price">
-                           <IconButton 
-                             onClick={() => openIndividualBasePriceDialog(size)}
-                             size="small"
-                             color="primary"
-                           >
-                             <EditIcon />
-                           </IconButton>
-                         </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+          <ResponsiveTable 
+            columns={[
+              { id: 'sizeType', label: 'Size Type' },
+              { id: 'basePrice', label: 'Base Price (Rs/kg)', align: 'right', format: (value) => `₹${value}` },
+              { id: 'updatedAt', label: 'Last Updated', align: 'right', format: (value) => new Date(value).toLocaleDateString() },
+              { id: 'actions', label: 'Actions', align: 'center', format: (_, row) => (
+                <Tooltip title="Edit Base Price">
+                  <IconButton 
+                    size="small" 
+                    onClick={() => openIndividualBasePriceDialog(row)}
+                    sx={{ '&:hover': { color: 'primary.main' } }}
+                  >
+                    <EditIcon />
+                  </IconButton>
+                </Tooltip>
+              )}
+            ]}
+            data={priceChart.map(item => ({
+              sizeType: item.sizeType,
+              basePrice: item.basePrice,
+              updatedAt: item.updatedAt,
+              id: item._id
+            }))}
+          />
 
-                     <Box sx={{ mt: 3, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
-             <Typography variant="body2" color="text.secondary">
-               <strong>Formula:</strong> Total Price = Base Price × Weight (kg)
-             </Typography>
-             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-               <strong>Example:</strong> 2 inch pipe at ₹96/kg × 5kg = ₹480
-             </Typography>
-           </Box>
+          <Box sx={{ 
+            mt: 3, 
+            p: 2, 
+            bgcolor: 'grey.50', 
+            borderRadius: 1,
+            overflowX: 'auto'
+          }}>
+            <ResponsiveTypography variant="body2" color="text.secondary">
+              <strong>Formula:</strong> Total Price = Base Price × Weight (kg)
+            </ResponsiveTypography>
+            <ResponsiveTypography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              <strong>Example:</strong> 2 inch pipe at ₹96/kg × 5kg = ₹480
+            </ResponsiveTypography>
+          </Box>
         </CardContent>
       </Card>
 
              {/* Global Base Price Dialog */}
-       <Dialog open={globalBasePriceDialog} onClose={() => setGlobalBasePriceDialog(false)} maxWidth="sm" fullWidth aria-modal="true">
-         <DialogTitle>Update Global Base Price</DialogTitle>
-         <DialogContent>
-           <Typography variant="body2" sx={{ mb: 2 }}>
-             This will update the base price for all size types to the same value.
-           </Typography>
-           <TextField
-             fullWidth
-             label="New Global Base Price (Rs/kg)"
-             type="number"
-             value={newGlobalBasePrice}
-             onChange={(e) => setNewGlobalBasePrice(e.target.value)}
-             inputProps={{ min: 0, step: 0.01 }}
-           />
-         </DialogContent>
-         <DialogActions>
-           <Button onClick={() => setGlobalBasePriceDialog(false)}>Cancel</Button>
-           <Button onClick={handleUpdateGlobalBasePrice} variant="contained">
-             Update All
-           </Button>
-         </DialogActions>
-       </Dialog>
+      <Dialog 
+        open={globalBasePriceDialog} 
+        onClose={() => setGlobalBasePriceDialog(false)} 
+        maxWidth="sm" 
+        fullWidth 
+        fullScreen={isMobile}
+        aria-modal="true"
+      >
+        <DialogTitle>
+          <ResponsiveTypography variant="h6">Update Global Base Price</ResponsiveTypography>
+        </DialogTitle>
+        <DialogContent>
+          <ResponsiveTypography variant="body2" sx={{ mb: 2 }}>
+            This will update the base price for all size types.
+          </ResponsiveTypography>
+          <TextField
+            fullWidth
+            label="New Global Base Price (Rs/kg)"
+            type="number"
+            value={newGlobalBasePrice}
+            onChange={(e) => setNewGlobalBasePrice(e.target.value)}
+            inputProps={{ min: 0, step: 0.01 }}
+            margin="normal"
+          />
+        </DialogContent>
+        <DialogActions sx={{ p: isMobile ? 2 : 1 }}>
+          <Button onClick={() => setGlobalBasePriceDialog(false)} fullWidth={isMobile}>Cancel</Button>
+          <Button onClick={handleUpdateGlobalBasePrice} variant="contained" fullWidth={isMobile}>
+            Update All
+          </Button>
+        </DialogActions>
+      </Dialog>
 
                            {/* Individual Base Price Dialog */}
-        <Dialog open={individualBasePriceDialog} onClose={() => setIndividualBasePriceDialog(false)} maxWidth="sm" fullWidth aria-modal="true">
-          <DialogTitle>Update Base Price for {editingSize?.sizeType}</DialogTitle>
+        <Dialog 
+          open={individualBasePriceDialog} 
+          onClose={() => setIndividualBasePriceDialog(false)} 
+          maxWidth="sm" 
+          fullWidth 
+          fullScreen={isMobile}
+          aria-modal="true"
+        >
+          <DialogTitle>
+            <ResponsiveTypography variant="h6">Update Base Price for {editingSize?.sizeType}</ResponsiveTypography>
+          </DialogTitle>
           <DialogContent>
-            <Typography variant="body2" sx={{ mb: 2 }}>
+            <ResponsiveTypography variant="body2" sx={{ mb: 2 }}>
               Current base price: ₹{editingSize?.basePrice}/kg
-            </Typography>
+            </ResponsiveTypography>
             <TextField
               fullWidth
               label="New Base Price (Rs/kg)"
@@ -255,43 +287,59 @@ function PriceChart() {
               value={newIndividualBasePrice}
               onChange={(e) => setNewIndividualBasePrice(e.target.value)}
               inputProps={{ min: 0, step: 0.01 }}
+              margin="normal"
             />
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setIndividualBasePriceDialog(false)}>Cancel</Button>
-            <Button onClick={handleUpdateIndividualBasePrice} variant="contained">
+          <DialogActions sx={{ p: isMobile ? 2 : 1 }}>
+            <Button onClick={() => setIndividualBasePriceDialog(false)} fullWidth={isMobile}>Cancel</Button>
+            <Button onClick={handleUpdateIndividualBasePrice} variant="contained" fullWidth={isMobile}>
               Update
             </Button>
           </DialogActions>
-      </Dialog>
+        </Dialog>
 
-      {/* New Size Type Dialog */}
-      <Dialog open={newSizeTypeDialog} onClose={() => setNewSizeTypeDialog(false)} maxWidth="sm" fullWidth aria-modal="true">
-        <DialogTitle>Add New Size Type</DialogTitle>
-        <DialogContent>
-          <TextField
-            fullWidth
-            label="Size Type (e.g., 3 inch)"
-            value={newSizeType}
-            onChange={(e) => setNewSizeType(e.target.value)}
-            sx={{ mb: 2, mt: 1 }}
-          />
-          <TextField
-            fullWidth
-            label="Base Price (Rs/kg)"
-            type="number"
-            value={newSizeBasePrice}
-            onChange={(e) => setNewSizeBasePrice(e.target.value)}
-            inputProps={{ min: 0, step: 0.01 }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setNewSizeTypeDialog(false)}>Cancel</Button>
-          <Button onClick={handleAddNewSizeType} variant="contained" color="primary">
-            Add Size Type
-          </Button>
-        </DialogActions>
-      </Dialog>
+        {/* New Size Type Dialog */}
+        <Dialog 
+          open={newSizeDialog} 
+          onClose={() => setNewSizeDialog(false)} 
+          maxWidth="sm" 
+          fullWidth 
+          fullScreen={isMobile}
+          aria-modal="true"
+        >
+          <DialogTitle>
+            <ResponsiveTypography variant="h6">Add New Size Type</ResponsiveTypography>
+          </DialogTitle>
+          <DialogContent>
+            <ResponsiveTypography variant="body2" sx={{ mb: 2 }}>
+              Add a new pipe size type with its base price.
+            </ResponsiveTypography>
+            <TextField
+              fullWidth
+              label="Size Type (e.g., '5 inch')"
+              value={newSizeType}
+              onChange={(e) => setNewSizeType(e.target.value)}
+              sx={{ mb: 2, mt: 1 }}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Base Price (Rs/kg)"
+              type="number"
+              value={newSizeBasePrice}
+              onChange={(e) => setNewSizeBasePrice(e.target.value)}
+              inputProps={{ min: 0, step: 0.01 }}
+              margin="normal"
+            />
+          </DialogContent>
+          <DialogActions sx={{ p: isMobile ? 2 : 1 }}>
+            <Button onClick={() => setNewSizeDialog(false)} fullWidth={isMobile}>Cancel</Button>
+            <Button onClick={handleAddNewSizeType} variant="contained" fullWidth={isMobile}>
+              Add Size Type
+            </Button>
+          </DialogActions>
+        </Dialog>
 
       <Snackbar
         open={!!success}
@@ -303,7 +351,9 @@ function PriceChart() {
           {success}
         </Alert>
       </Snackbar>
-    </Box>
+    {/* </Box> */}
+  </ResponsiveContainer>
+    
     </>
   );
 }

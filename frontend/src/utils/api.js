@@ -3,7 +3,8 @@ import axios from 'axios';
 // Create API instance
 const api = axios.create({
     baseURL: `${process.env.REACT_APP_API_URL}/api`,
-    timeout: 10000 // 10 second timeout
+    timeout: 10000, // 10 second timeout
+    withCredentials: true // Include credentials in cross-origin requests
 });
 
 // Loading state handler

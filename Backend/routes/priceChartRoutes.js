@@ -3,8 +3,7 @@ const {
     getPriceChart, 
     updateBasePrice, 
     updateSizeBasePrice, 
-    getPriceForSize,
-    addSizeType 
+    getPriceForSize 
 } = require("../controllers/priceChartController");
 const { protect, managerOnly } = require("../middleware/authMiddleware");
 
@@ -21,8 +20,5 @@ router.put("/base-price", protect, managerOnly, updateBasePrice);
 
 // Update individual size base price (managers only)
 router.put("/base-price/:sizeType", protect, managerOnly, updateSizeBasePrice);
-
-// Add new size type (managers only)
-router.post("/size-type", protect, managerOnly, addSizeType);
 
 module.exports = router;

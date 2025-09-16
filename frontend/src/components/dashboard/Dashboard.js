@@ -170,7 +170,7 @@ function Dashboard() {
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box>
                     <Typography variant="h4" component="div">
-                      ${(data.currentMonthStats?.totalWeight * 150 || 0).toLocaleString()}
+                      ₹{(data.currentMonthStats?.totalWeight * 150 || 0).toLocaleString()}
                     </Typography>
                     <Typography variant="body2">Monthly Value</Typography>
                   </Box>

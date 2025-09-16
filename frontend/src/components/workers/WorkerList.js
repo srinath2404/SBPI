@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Typography,
@@ -10,19 +10,18 @@ import {
   TableHead,
   TableRow,
   Paper,
+  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
   Alert,
-  IconButton,
-  Tooltip
+  LinearProgress
 } from '@mui/material';
-import { Delete, Edit, Refresh, Add } from '@mui/icons-material';
+import { Add, Edit, Delete } from '@mui/icons-material';
 import api from '../../utils/api';
 import Navbar from '../layout/Navbar';
-import { useLoading } from '../../context/LoadingContext';
 
 function WorkerList() {
   const [workers, setWorkers] = useState([]);
@@ -36,7 +35,6 @@ function WorkerList() {
     email: '',
     password: ''
   });
-  const { showLoading, hideLoading } = useLoading();
 
   useEffect(() => {
     fetchWorkers();
@@ -44,25 +42,19 @@ function WorkerList() {
 
   const fetchWorkers = async () => {
     try {
-      showLoading('Loading workers...');
-      const response = await api.get('/workers/all', { skipLoading: true });
+      const response = await api.get('/workers/all');
       setWorkers(response.data);
     } catch (error) {
       setError('Error fetching workers');
-    } finally {
-      hideLoading();
     }
   };
 
   const fetchResetRequests = async () => {
     try {
-      showLoading('Loading password reset requests...');
-      const response = await api.get('/workers/reset-requests', { skipLoading: true });
+      const response = await api.get('/workers/reset-requests');
       setResetRequests(response.data || []);
     } catch (e) {
       setError('Error fetching password reset requests');
-    } finally {
-      hideLoading();
     }
   };
 

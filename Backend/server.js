@@ -17,13 +17,15 @@ const workProgressRoutes = require("./routes/workProgressRoutes");
 const priceRoutes = require("./routes/priceRoutes");
 const priceChartRoutes = require("./routes/priceChartRoutes");
 const taskRoutes = require("./routes/taskRoutes"); // Task management system
+// Temporarily commenting out mail routes due to undefined function issue
+// const mailRoutes = require("./routes/mailRoutes"); // Mail system
 // const notificationRoutes = require("./routes/notificationRoutes"); // Removed notification system
 
 
 const app = express();
 
 app.use(cors({
-  origin: ['https://sbpi-htaa.vercel.app', 'http://localhost:3000'],
+  origin: ['https://sbpi-htaa.vercel.app', 'http://localhost:3000', 'http://localhost:3001'],
   credentials: true
 }));
 app.use(helmet({
@@ -49,6 +51,8 @@ app.use("/api/work-progress", workProgressRoutes);
 app.use("/api/price", priceRoutes);
 app.use("/api/price-chart", priceChartRoutes);
 app.use("/api/tasks", taskRoutes); // Task management system
+// Temporarily commenting out mail routes due to undefined function issue
+// app.use("/api/mail", mailRoutes); // Mail system
 // app.use("/api/notifications", notificationRoutes); // Removed notification system
 
 // Add a test route to verify the server is running

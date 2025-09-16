@@ -23,8 +23,7 @@ import {
   CardContent,
   InputAdornment,
   Collapse,
-  Alert,
-  TablePagination
+  Alert
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -43,6 +42,7 @@ import api from '../../utils/api';
 
 function PipeList() {
   const [pipes, setPipes] = useState([]);
+  const [filteredPipes, setFilteredPipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
@@ -59,45 +59,27 @@ function PipeList() {
   const [sortOrder, setSortOrder] = useState('desc');
   const [showFilters, setShowFilters] = useState(false);
   const [stats, setStats] = useState({});
-  
-  // Pagination state
-  const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [totalPipes, setTotalPipes] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchPipes();
-  }, [page, rowsPerPage, searchTerm, filters, sortBy, sortOrder]);
+  }, []);
+
+  useEffect(() => {
+    // Only run when pipes is properly initialized
+    if (Array.isArray(pipes)) {
+      applyFiltersAndSearch();
+    }
+  }, [pipes, searchTerm, filters, sortBy, sortOrder]);
 
   const fetchPipes = async () => {
     try {
       setLoading(true);
-      
-      // Build query parameters for server-side filtering and pagination
-      const params = new URLSearchParams();
-      params.append('page', page);
-      params.append('limit', rowsPerPage);
-      params.append('sortBy', sortBy);
-      params.append('sortOrder', sortOrder);
-      
-      if (searchTerm) params.append('search', searchTerm);
-      if (filters.colorGrade) params.append('colorGrade', filters.colorGrade);
-      if (filters.sizeType) params.append('sizeType', filters.sizeType);
-      if (filters.batchNumber) params.append('batchNumber', filters.batchNumber);
-      
-      const response = await api.get(`/inventory/all?${params.toString()}`);
+      const response = await api.get('/inventory/all');
       
       // Backend returns an object: { pipes: [...], pagination: {...}, filters: {...} }
       const pipesData = Array.isArray(response.data?.pipes) ? response.data.pipes : [];
       setPipes(pipesData);
-      
-      // Update pagination state
-      if (response.data?.pagination) {
-        setTotalPipes(response.data.pagination.totalPipes || 0);
-        setTotalPages(response.data.pagination.totalPages || 1);
-      }
       
       // Calculate statistics
       const pipeStats = calculateStats(pipesData);
@@ -106,9 +88,8 @@ function PipeList() {
       console.error('Error fetching pipes:', error);
       // Set empty arrays on error to prevent crashes
       setPipes([]);
+      setFilteredPipes([]);
       setStats({});
-      setTotalPipes(0);
-      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -145,33 +126,71 @@ function PipeList() {
     };
   };
 
+  const applyFiltersAndSearch = () => {
+    // Ensure pipes is an array before proceeding
+    if (!Array.isArray(pipes)) {
+      setFilteredPipes([]);
+      return;
+    }
+    
+    let filtered = [...pipes];
+
+    // Apply search
+    if (searchTerm) {
+      filtered = filtered.filter(pipe =>
+        pipe.serialNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pipe.batchNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pipe.colorGrade?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        pipe.sizeType?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+
+    // Apply filters
+    if (filters.colorGrade) {
+      filtered = filtered.filter(pipe => pipe.colorGrade === filters.colorGrade);
+    }
+    if (filters.sizeType) {
+      filtered = filtered.filter(pipe => pipe.sizeType === filters.sizeType);
+    }
+    if (filters.batchNumber) {
+      filtered = filtered.filter(pipe => pipe.batchNumber?.includes(filters.batchNumber));
+    }
+    if (filters.minWeight) {
+      filtered = filtered.filter(pipe => pipe.weight >= parseFloat(filters.minWeight));
+    }
+    if (filters.maxWeight) {
+      filtered = filtered.filter(pipe => pipe.weight <= parseFloat(filters.maxWeight));
+    }
+    if (filters.minLength) {
+      filtered = filtered.filter(pipe => pipe.length >= parseFloat(filters.minLength));
+    }
+    if (filters.maxLength) {
+      filtered = filtered.filter(pipe => pipe.length <= parseFloat(filters.maxLength));
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aVal = a[sortBy];
+      let bVal = b[sortBy];
+      
+      if (sortBy === 'manufacturingDate') {
+        aVal = new Date(aVal);
+        bVal = new Date(bVal);
+      }
+      
+      if (sortOrder === 'asc') {
+        return aVal > bVal ? 1 : -1;
+      } else {
+        return aVal < bVal ? 1 : -1;
+      }
+    });
+
+    // Ensure we always set a valid array
+    setFilteredPipes(Array.isArray(filtered) ? filtered : []);
+  };
+
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({ ...prev, [field]: value }));
-    setPage(1); // Reset to first page when changing filters
-  };
-
-  const handleSearchChange = (value) => {
-    setSearchTerm(value);
-    setPage(1); // Reset to first page when searching
-  };
-
-  const handleSortChange = (field) => {
-    if (field === sortBy) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortOrder('desc');
-    }
-    setPage(1); // Reset to first page when sorting
-  };
-
-  const handlePageChange = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleRowsPerPageChange = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(1); // Reset to first page when changing rows per page
   };
 
   const clearFilters = () => {
@@ -186,7 +205,12 @@ function PipeList() {
       maxLength: ''
     });
     setSearchTerm('');
-    setPage(1);
+    // Reset filtered pipes to show all pipes
+    if (Array.isArray(pipes)) {
+      setFilteredPipes([...pipes]);
+    } else {
+      setFilteredPipes([]);
+    }
   };
 
   const getQualityColor = (grade) => {
@@ -453,7 +477,7 @@ function PipeList() {
 
         {/* Results Summary */}
         <Alert severity="info" sx={{ mb: 2 }}>
-          Showing {Array.isArray(pipes) ? pipes.length : 0} of {totalPipes} pipes
+          Showing {Array.isArray(filteredPipes) ? filteredPipes.length : 0} of {Array.isArray(pipes) ? pipes.length : 0} pipes
           {searchTerm && ` matching "${searchTerm}"`}
         </Alert>
 
@@ -474,7 +498,7 @@ function PipeList() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {Array.isArray(pipes) && pipes.map((pipe, index) => (
+              {Array.isArray(filteredPipes) && filteredPipes.map((pipe, index) => (
                 <TableRow key={pipe?._id || `pipe-${index}`}>
                   <TableCell>{pipe?.serialNumber || '-'}</TableCell>
                   <TableCell>
@@ -521,11 +545,11 @@ function PipeList() {
                   </TableCell>
                 </TableRow>
               ))}
-              {(!Array.isArray(pipes) || pipes.length === 0) && (
+              {(!Array.isArray(filteredPipes) || filteredPipes.length === 0) && (
                 <TableRow>
                   <TableCell colSpan={9} align="center">
                     <Typography variant="body1" color="textSecondary">
-                      {loading ? 'Loading pipes...' : 'No pipes found matching your criteria'}
+                      {!Array.isArray(filteredPipes) ? 'Loading pipes...' : 'No pipes found matching your criteria'}
                     </Typography>
                   </TableCell>
                 </TableRow>
@@ -533,17 +557,6 @@ function PipeList() {
             </TableBody>
           </Table>
         </TableContainer>
-        
-        {/* Pagination */}
-        <TablePagination
-          component="div"
-          count={totalPipes}
-          page={page}
-          onPageChange={handlePageChange}
-          rowsPerPage={rowsPerPage}
-          onRowsPerPageChange={handleRowsPerPageChange}
-          rowsPerPageOptions={[10, 25, 50, 100]}
-        />
       </Box>
     </Box>
   );

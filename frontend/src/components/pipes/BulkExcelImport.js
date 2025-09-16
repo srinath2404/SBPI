@@ -2,17 +2,16 @@ import React, { useState } from 'react';
 import { Box, Typography, Card, CardContent, Button, Alert, CircularProgress, Table, TableBody, TableCell, TableHead, TableRow, TextField, Pagination, Stack, MenuItem, FormControlLabel, Checkbox, Grid, InputLabel, Select, FormControl } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import api from '../../utils/api';
-import { useLoading } from '../../context/LoadingContext';
 
 function BulkExcelImport() {
   const [file, setFile] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [preview, setPreview] = useState([]);
   const [sheetName, setSheetName] = useState('');
   const [commitResult, setCommitResult] = useState(null);
   const [page, setPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const { showLoading, hideLoading } = useLoading();
   
   // Bulk edit fields
   const [bulkEdit, setBulkEdit] = useState({
@@ -57,15 +56,14 @@ function BulkExcelImport() {
       return;
     }
     try {
-      showLoading('Previewing Excel file...');
+      setLoading(true);
       setError('');
       setPreview([]);
       setCommitResult(null);
       const formData = new FormData();
       formData.append('file', file);
       const { data } = await api.post('/pipes/preview-excel', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        skipLoading: true
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
       setSheetName(data.sheetName);
       setPreview((data.rows || []).map(r => ({
@@ -100,7 +98,7 @@ function BulkExcelImport() {
     } catch (e) {
       setError(e.response?.data?.message || 'Failed to preview Excel');
     } finally {
-      hideLoading();
+      setLoading(false);
     }
   };
 
@@ -138,18 +136,16 @@ function BulkExcelImport() {
       return;
     }
     try {
-      showLoading('Importing data...');
+      setLoading(true);
       setError('');
       setCommitResult(null);
       const payload = { rows: preview.map(({ validation, price, ...rest }) => rest) };
-      const { data } = await api.post('/inventory/commit-excel', payload, {
-        skipLoading: true
-      });
+      const { data } = await api.post('/inventory/commit-excel', payload);
       setCommitResult(data);
     } catch (e) {
       setError(e.response?.data?.message || 'Failed to import rows');
     } finally {
-      hideLoading();
+      setLoading(false);
     }
   };
 
@@ -218,14 +214,14 @@ function BulkExcelImport() {
           <input type="file" accept=".xlsx,.xls,.csv" onChange={onFileChange} />
 
           <Box sx={{ mt: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <Button variant="outlined" onClick={onPreview} disabled={!file}>
-              Preview
+            <Button variant="outlined" onClick={onPreview} disabled={loading || !file} startIcon={loading ? <CircularProgress size={18} /> : null}>
+              {loading ? 'Processing…' : 'Preview'}
             </Button>
-            <Button variant="contained" onClick={onCommit} disabled={!preview.length}>
+            <Button variant="contained" onClick={onCommit} disabled={loading || !preview.length}>
               Commit to Inventory
             </Button>
             {preview.length > 0 && (
-              <Button variant="text" onClick={fillDefaults}>
+              <Button variant="text" onClick={fillDefaults} disabled={loading}>
                 Fill Defaults (Grade A, 2 inch)
               </Button>
             )}

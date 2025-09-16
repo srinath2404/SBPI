@@ -50,10 +50,10 @@ function Navbar() {
           component="div" 
           sx={{ flexGrow: 1, cursor: 'pointer' }} 
           onClick={() => {
-            // Redirect to appropriate page based on user role
+            // Redirect to appropriate dashboard based on user role
             const userData = JSON.parse(localStorage.getItem('user') || '{}');
             const userRole = userData.role || 'worker';
-            navigate(userRole === 'manager' ? '/pipes' : '/worker-dashboard');
+            navigate(userRole === 'manager' ? '/dashboard' : '/worker-dashboard');
           }}
         >
           Sri Balaji HDPE Pipes
@@ -63,19 +63,10 @@ function Navbar() {
           {role === 'manager' && (
             <Button 
               color="inherit" 
-              onClick={() => navigate('/expenses')}
+              onClick={() => navigate('/dashboard')}
               sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
             >
-              Expenses
-            </Button>
-          )}
-          {role === 'manager' && (
-            <Button 
-              color="inherit" 
-              onClick={() => navigate('/orders')}
-              sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
-            >
-              Orders
+              Dashboard
             </Button>
           )}
           <Button 
@@ -85,6 +76,15 @@ function Navbar() {
           >
             My Performance
           </Button>
+          {role === 'manager' && (
+            <Button 
+              color="inherit" 
+              onClick={() => navigate('/dashboard')}
+              sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
+            >
+              SBPI Management
+            </Button>
+          )}
           <Button 
             color="inherit" 
             onClick={() => navigate('/pipes')}
@@ -133,6 +133,15 @@ function Navbar() {
           >
             Tasks
           </Button>
+          {role === 'manager' && (
+            <Button 
+              color="inherit" 
+              onClick={() => navigate('/mail')}
+              sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
+            >
+              Mail
+            </Button>
+          )}
           <NotificationCenter />
           <Typography sx={{ mx: 2 }}>
             {userName}
@@ -166,9 +175,11 @@ function Navbar() {
             <MenuItem onClick={() => { navigate('/sales'); closeMenu(); }}>Sales</MenuItem>
             <MenuItem onClick={() => { navigate('/tasks'); closeMenu(); }}>Tasks</MenuItem>
             {role === 'manager' && (
+              <MenuItem onClick={() => { navigate('/mail'); closeMenu(); }}>Mail</MenuItem>
+            )}
+            {role === 'manager' && (
               <>
-                <MenuItem onClick={() => { navigate('/expenses'); closeMenu(); }}>Expenses</MenuItem>
-                <MenuItem onClick={() => { navigate('/orders'); closeMenu(); }}>Orders</MenuItem>
+                <MenuItem onClick={() => { navigate('/dashboard'); closeMenu(); }}>Dashboard</MenuItem>
                 <MenuItem onClick={() => { navigate('/workers'); closeMenu(); }}>Workers</MenuItem>
                 <MenuItem onClick={() => { navigate('/pricing'); closeMenu(); }}>Pricing</MenuItem>
               </>

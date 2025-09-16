@@ -1,0 +1,50 @@
+.mail-app-container {
+  padding: 24px;
+}
+
+.mail-header {
+  margin-bottom: 24px;
+}
+
+.mail-card {
+  margin-bottom: 16px;
+  transition: transform 0.2s;
+}
+
+.mail-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.mail-form-container {
+  margin-top: 24px;
+}
+
+.mail-form-field {
+  margin-bottom: 16px;
+}
+
+.mail-template-card {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mail-template-card:hover {
+  background-color: #f5f5f5;
+  transform: translateY(-2px);
+}
+
+.mail-template-card.selected {
+  border: 2px solid #1976d2;
+  background-color: #e3f2fd;
+}
+
+.mail-history-item {
+  border-left: 3px solid #1976d2;
+  padding-left: 16px;
+  margin-bottom: 8px;
+}
+
+.mail-action-button {
+  margin-right: 8px;
+}

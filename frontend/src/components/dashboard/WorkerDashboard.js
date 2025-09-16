@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Grid, Card, CardContent, Typography, Chip, Avatar, List, ListItem, ListItemText, ListItemAvatar, LinearProgress, Paper } from '@mui/material';
-import { Person, TrendingUp, Speed, Grade, Assessment, CalendarToday, Work } from '@mui/icons-material';
+import { Box, Grid, Card, CardContent, Typography, Chip, Avatar, List, ListItem, ListItemText, ListItemAvatar, LinearProgress, Paper, CircularProgress, Button, Backdrop } from '@mui/material';
+import { Person, TrendingUp, Speed, Grade, Assessment, CalendarToday, Work, Refresh } from '@mui/icons-material';
 import Navbar from '../layout/Navbar';
 import api from '../../utils/api';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
@@ -13,7 +13,15 @@ function WorkerDashboard() {
     qualityTrend: [],
     performance: {}
   });
+  const [loadingStates, setLoadingStates] = useState({
+    main: true,
+    summary: false,
+    quality: false,
+    production: false,
+    recentWork: false
+  });
   const [isLoading, setIsLoading] = useState(true);
+  const [globalLoading, setGlobalLoading] = useState(false);
 
   useEffect(() => {
     fetchWorkerData();
@@ -22,7 +30,11 @@ function WorkerDashboard() {
   const fetchWorkerData = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get('/dashboard/worker');
+      setGlobalLoading(true);
+      // Add a timestamp to prevent caching issues
+      const response = await api.get('/dashboard/worker', {
+        params: { _t: new Date().getTime() }
+      });
       console.log('Worker dashboard data:', response.data);
       
       // Set default empty data structure if response data is missing
@@ -35,10 +47,15 @@ function WorkerDashboard() {
       };
       
       // Merge response data with default data to ensure all properties exist
-      setData({
-        ...defaultData,
-        ...response.data
-      });
+      if (response.data && Object.keys(response.data).length > 0) {
+        setData({
+          ...defaultData,
+          ...response.data
+        });
+      } else {
+        console.warn('Worker dashboard returned empty data');
+        setData(defaultData);
+      }
     } catch (error) {
       console.error('Error fetching worker data:', error);
       // Set default data on error
@@ -51,6 +68,104 @@ function WorkerDashboard() {
       });
     } finally {
       setIsLoading(false);
+      setGlobalLoading(false);
+    }
+  };
+  
+  // Section-specific data fetching functions
+  const refreshSectionData = (section) => {
+    switch(section) {
+      case 'summary':
+        fetchSummaryData();
+        break;
+      case 'quality':
+        fetchQualityData();
+        break;
+      case 'production':
+        fetchProductionData();
+        break;
+      case 'recentWork':
+        fetchRecentWorkData();
+        break;
+      default:
+        break;
+    }
+  };
+
+  const fetchSummaryData = async () => {
+    try {
+      setLoadingStates(prev => ({ ...prev, summary: true }));
+      const response = await api.get('/dashboard/worker', {
+        params: { _t: new Date().getTime() }
+      });
+      if (response.data) {
+        setData(prev => ({
+          ...prev,
+          currentMonthStats: response.data.currentMonthStats || {},
+          performance: response.data.performance || {}
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching summary data:', error);
+    } finally {
+      setLoadingStates(prev => ({ ...prev, summary: false }));
+    }
+  };
+
+  const fetchQualityData = async () => {
+    try {
+      setLoadingStates(prev => ({ ...prev, quality: true }));
+      const response = await api.get('/dashboard/worker', {
+        params: { _t: new Date().getTime() }
+      });
+      if (response.data) {
+        setData(prev => ({
+          ...prev,
+          qualityTrend: response.data.qualityTrend || []
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching quality data:', error);
+    } finally {
+      setLoadingStates(prev => ({ ...prev, quality: false }));
+    }
+  };
+
+  const fetchProductionData = async () => {
+    try {
+      setLoadingStates(prev => ({ ...prev, production: true }));
+      const response = await api.get('/dashboard/worker', {
+        params: { _t: new Date().getTime() }
+      });
+      if (response.data) {
+        setData(prev => ({
+          ...prev,
+          monthlyProduction: response.data.monthlyProduction || []
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching production data:', error);
+    } finally {
+      setLoadingStates(prev => ({ ...prev, production: false }));
+    }
+  };
+
+  const fetchRecentWorkData = async () => {
+    try {
+      setLoadingStates(prev => ({ ...prev, recentWork: true }));
+      const response = await api.get('/dashboard/worker', {
+        params: { _t: new Date().getTime() }
+      });
+      if (response.data) {
+        setData(prev => ({
+          ...prev,
+          recentWork: response.data.recentWork || []
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching recent work data:', error);
+    } finally {
+      setLoadingStates(prev => ({ ...prev, recentWork: false }));
     }
   };
 
@@ -93,15 +208,65 @@ function WorkerDashboard() {
   return (
     <Box>
       <Navbar />
+      <Backdrop
+        sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        open={globalLoading}
+      >
+        <CircularProgress color="inherit" />
+      </Backdrop>
       <Box sx={{ p: 3 }}>
         <Typography variant="h4" sx={{ mb: 4, display: 'flex', alignItems: 'center', gap: 2 }}>
           <Person /> My Performance Dashboard
         </Typography>
-
+        
+        {isLoading ? (
+          <Box sx={{ width: '100%', mt: 4, textAlign: 'center' }}>
+            <CircularProgress />
+            <Typography sx={{ mt: 2 }}>Loading your performance data...</Typography>
+          </Box>
+        ) : data.monthlyProduction.length === 0 && Object.keys(data.currentMonthStats).length === 0 ? (
+          <Paper sx={{ p: 3, mt: 4, textAlign: 'center', bgcolor: '#fff9f9' }}>
+            <Typography variant="h6" color="error">
+              No performance data available
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              We couldn't find any performance data for your account. This could be because you haven't produced any pipes yet.
+            </Typography>
+            <Button 
+              variant="contained" 
+              color="primary" 
+              sx={{ mt: 2 }}
+              onClick={fetchWorkerData}
+            >
+              Retry
+            </Button>
+          </Paper>
+        ) : (
+          <>
         {/* Performance Summary Cards */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12}>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+              <Button 
+                startIcon={<Refresh />} 
+                size="small" 
+                onClick={() => refreshSectionData('summary')}
+                disabled={loadingStates.summary}
+              >
+                {loadingStates.summary ? 'Refreshing...' : 'Refresh Summary'}
+              </Button>
+            </Box>
+            {loadingStates.summary && (
+              <LinearProgress sx={{ mb: 2 }} />
+            )}
+          </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ bgcolor: 'primary.main', color: 'white' }}>
+            <Card sx={{ bgcolor: 'primary.main', color: 'white', position: 'relative' }}>
+              {loadingStates.summary && (
+                <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(255,255,255,0.2)', zIndex: 1, borderRadius: 1 }}>
+                  <CircularProgress size={24} sx={{ color: 'white' }} />
+                </Box>
+              )}
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box>
@@ -117,7 +282,12 @@ function WorkerDashboard() {
           </Grid>
           
           <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ bgcolor: 'success.main', color: 'white' }}>
+            <Card sx={{ bgcolor: 'success.main', color: 'white', position: 'relative' }}>
+              {loadingStates.summary && (
+                <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(255,255,255,0.2)', zIndex: 1, borderRadius: 1 }}>
+                  <CircularProgress size={24} sx={{ color: 'white' }} />
+                </Box>
+              )}
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box>
@@ -133,7 +303,12 @@ function WorkerDashboard() {
           </Grid>
           
           <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ bgcolor: 'warning.main', color: 'white' }}>
+            <Card sx={{ bgcolor: 'warning.main', color: 'white', position: 'relative' }}>
+              {loadingStates.summary && (
+                <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(255,255,255,0.2)', zIndex: 1, borderRadius: 1 }}>
+                  <CircularProgress size={24} sx={{ color: 'white' }} />
+                </Box>
+              )}
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box>
@@ -149,7 +324,12 @@ function WorkerDashboard() {
           </Grid>
           
           <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ bgcolor: 'secondary.main', color: 'white' }}>
+            <Card sx={{ bgcolor: 'secondary.main', color: 'white', position: 'relative' }}>
+              {loadingStates.summary && (
+                <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(255,255,255,0.2)', zIndex: 1, borderRadius: 1 }}>
+                  <CircularProgress size={24} sx={{ color: 'white' }} />
+                </Box>
+              )}
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <Box>
@@ -167,6 +347,21 @@ function WorkerDashboard() {
 
         {/* Quality Distribution & Performance Metrics */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12}>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+              <Button 
+                startIcon={<Refresh />} 
+                size="small" 
+                onClick={() => refreshSectionData('quality')}
+                disabled={loadingStates.quality}
+              >
+                {loadingStates.quality ? 'Refreshing...' : 'Refresh Quality Data'}
+              </Button>
+            </Box>
+            {loadingStates.quality && (
+              <LinearProgress sx={{ mb: 2 }} />
+            )}
+          </Grid>
           <Grid item xs={12} md={6}>
             <Card>
               <CardContent>
@@ -264,21 +459,43 @@ function WorkerDashboard() {
         {/* Monthly Production Chart */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
           <Grid item xs={12}>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+              <Button 
+                startIcon={<Refresh />} 
+                size="small" 
+                onClick={() => refreshSectionData('production')}
+                disabled={loadingStates.production}
+              >
+                {loadingStates.production ? 'Refreshing...' : 'Refresh Production Data'}
+              </Button>
+            </Box>
+            {loadingStates.production && (
+              <LinearProgress sx={{ mb: 2 }} />
+            )}
+          </Grid>
+          <Grid item xs={12}>
             <Card>
               <CardContent>
                 <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                   <CalendarToday /> Monthly Production Trend
                 </Typography>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={chartData} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="pipes" stroke="#1976d2" strokeWidth={2} name="Pipes" />
-                    <Line type="monotone" dataKey="weight" stroke="#4caf50" strokeWidth={2} name="Weight (kg)" />
-                  </LineChart>
-                </ResponsiveContainer>
+                <Box sx={{ position: 'relative', height: 300 }}>
+                  {loadingStates.production && (
+                    <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(255,255,255,0.7)', zIndex: 1 }}>
+                      <CircularProgress size={40} />
+                    </Box>
+                  )}
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={chartData} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="pipes" stroke="#1976d2" strokeWidth={2} name="Pipes" />
+                      <Line type="monotone" dataKey="weight" stroke="#4caf50" strokeWidth={2} name="Weight (kg)" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </Box>
               </CardContent>
             </Card>
           </Grid>
@@ -286,23 +503,45 @@ function WorkerDashboard() {
 
         {/* Quality Trend & Recent Work */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
+          <Grid item xs={12}>
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+              <Button 
+                startIcon={<Refresh />} 
+                size="small" 
+                onClick={() => refreshSectionData('recentWork')}
+                disabled={loadingStates.recentWork}
+              >
+                {loadingStates.recentWork ? 'Refreshing...' : 'Refresh Recent Work'}
+              </Button>
+            </Box>
+            {loadingStates.recentWork && (
+              <LinearProgress sx={{ mb: 2 }} />
+            )}
+          </Grid>
           <Grid item xs={12} md={6}>
             <Card>
               <CardContent>
                 <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                   <TrendingUp /> Quality Trend (3 Months)
                 </Typography>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={qualityData} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="gradeA" stackId="a" fill="#4caf50" name="Grade A" />
-                    <Bar dataKey="gradeB" stackId="a" fill="#ff9800" name="Grade B" />
-                    <Bar dataKey="gradeC" stackId="a" fill="#f44336" name="Grade C" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <Box sx={{ position: 'relative', height: 250 }}>
+                  {loadingStates.quality && (
+                    <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(255,255,255,0.7)', zIndex: 1 }}>
+                      <CircularProgress size={40} />
+                    </Box>
+                  )}
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={qualityData} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="gradeA" stackId="a" fill="#4caf50" name="Grade A" />
+                      <Bar dataKey="gradeB" stackId="a" fill="#ff9800" name="Grade B" />
+                      <Bar dataKey="gradeC" stackId="a" fill="#f44336" name="Grade C" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </Box>
               </CardContent>
             </Card>
           </Grid>
@@ -313,7 +552,12 @@ function WorkerDashboard() {
                 <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                   <Work /> Recent Work
                 </Typography>
-                <List sx={{ maxHeight: 250, overflow: 'auto' }}>
+                <List sx={{ maxHeight: 250, overflow: 'auto', position: 'relative' }}>
+                  {loadingStates.recentWork && (
+                    <Box sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(255,255,255,0.7)', zIndex: 1 }}>
+                      <CircularProgress size={24} />
+                    </Box>
+                  )}
                   {data.recentWork?.map((work, index) => (
                     <ListItem key={index} sx={{ px: 0, borderBottom: '1px solid #f0f0f0' }}>
                       <ListItemAvatar>
@@ -394,6 +638,8 @@ function WorkerDashboard() {
             </Card>
           </Grid>
         </Grid>
+        </>
+        )}
       </Box>
     </Box>
   );

@@ -16,7 +16,6 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
-import { useLoading } from '../../context/LoadingContext';
 
 function AddPipe() {
   const [formData, setFormData] = useState({
@@ -40,7 +39,6 @@ function AddPipe() {
   const [rateDialogOpen, setRateDialogOpen] = useState(false);
   const [baseRate, setBaseRate] = useState('');
   const navigate = useNavigate();
-  const { showLoading, hideLoading } = useLoading();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -71,8 +69,7 @@ function AddPipe() {
     }
     
     try {
-      showLoading('Adding new pipe...');
-      const response = await api.post('/inventory/add', { ...formData, skipLoading: true });
+      const response = await api.post('/inventory/add', formData);
       const successMessage = response.data?.message || '';
       const isSuccess = response.status === 201 || successMessage.includes('Pipe added successfully');
       
@@ -97,8 +94,6 @@ function AddPipe() {
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Error adding pipe. Please try again.';
       setError(errorMessage);
-    } finally {
-      hideLoading();
     }
   };
 
