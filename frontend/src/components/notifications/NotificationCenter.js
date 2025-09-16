@@ -4,6 +4,7 @@ import { Bell, Check } from 'react-bootstrap-icons';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import './NotificationCenter.css';
+import api, { checkConnection } from '../../utils/api';
 
 const NotificationCenter = () => {
     const [tasks, setTasks] = useState([]);
@@ -16,10 +17,25 @@ const NotificationCenter = () => {
     // Fetch unread count
     const fetchUnreadCount = async () => {
         try {
-            const { data } = await axios.get('/api/tasks/unread-count');
+            // Use the api instance with fallback mechanism instead of axios directly
+            const { data } = await api.get('/tasks/unread-count');
             setUnreadCount(data.unreadCount);
+            
+            // Store the last known count for offline use
+            localStorage.setItem('last_unread_count', data.unreadCount);
+            
+            // If we got data and were in offline mode, try to reconnect
+            if (localStorage.getItem('offline_mode')) {
+                checkConnection();
+            }
         } catch (error) {
             console.error('Error fetching unread count:', error);
+            // If we're offline, set a default value
+            if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+                // Use last known value or default to 0
+                const lastKnownCount = localStorage.getItem('last_unread_count');
+                setUnreadCount(lastKnownCount ? parseInt(lastKnownCount, 10) : 0);
+            }
         }
     };
 

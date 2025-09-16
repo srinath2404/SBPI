@@ -1,0 +1,69 @@
+.offline-indicator {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 10px 15px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slideIn 0.3s ease-out;
+}
+
+.offline-indicator-icon {
+    display: flex;
+    align-items: center;
+}
+
+.offline-indicator-message {
+    flex-grow: 1;
+}
+
+.offline-indicator-button {
+    background-color: #721c24;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.offline-indicator-button:hover {
+    background-color: #5c171d;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(100px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+.offline-mode .offline-sensitive {
+    opacity: 0.7;
+}
+
+.reconnecting {
+    animation: pulse 1.5s infinite;
+}

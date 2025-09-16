@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -13,6 +14,8 @@ import ResetPassword from './components/auth/ResetPassword';
 import BulkExcelImport from './components/pipes/BulkExcelImport';
 import TaskPages from './components/tasks/TaskPages';
 import MailApp from './components/mail/MailApp';
+import OfflineIndicator from './components/common/OfflineIndicator';
+import { checkConnection } from './utils/api';
 // import SellRequest from './components/sales/SellRequest';
 
 const theme = createTheme({
@@ -42,10 +45,25 @@ const ManagerRoute = ({children}) => {
 };
 
 function App() {
+  // Check connection status when app loads
+  useEffect(() => {
+    const checkConnectionStatus = async () => {
+      await checkConnection();
+    };
+    
+    checkConnectionStatus();
+    
+    // Set up periodic connection checks
+    const interval = setInterval(checkConnectionStatus, 60000); // Check every minute
+    
+    return () => clearInterval(interval);
+  }, []);
+  
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
+        <OfflineIndicator />
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/dashboard" element={<ManagerRoute><Dashboard /></ManagerRoute>} />

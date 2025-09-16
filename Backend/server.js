@@ -60,6 +60,11 @@ app.get("/", (req, res) => {
   res.send("Backend is working ✅");
 });
 
+// Add a health check endpoint for connection testing
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
 const PORT = process.env.PORT || 5000;
 
 // Import the enhanced database connection
