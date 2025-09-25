@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Badge, Button, Spinner, Form } from 'react-bootstrap';
 import { ArrowLeft, Pencil } from 'react-bootstrap-icons';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import TaskModal from './TaskModal';
+import api from '../../utils/api';
+import { isNetworkError } from '../../utils/offlineUtils';
 import './TaskDetail.css';
 
 const TaskDetail = () => {
@@ -19,12 +20,16 @@ const TaskDetail = () => {
     const fetchTask = async () => {
         setLoading(true);
         try {
-            const { data } = await axios.get(`/api/tasks/${taskId}`);
+            const { data } = await api.get(`/api/tasks/${taskId}`);
             setTask(data);
             setStatusUpdate(data.status);
             setError(null);
         } catch (err) {
-            setError('Failed to load task details. Please try again.');
+            if (isNetworkError(err)) {
+                setError('Network error: Unable to connect to the server. Please check your internet connection and try again.');
+            } else {
+                setError('Failed to load task details. Please try again.');
+            }
             console.error('Error fetching task:', err);
         } finally {
             setLoading(false);
@@ -34,12 +39,16 @@ const TaskDetail = () => {
     // Handle task update
     const handleTaskUpdate = async (taskData) => {
         try {
-            await axios.put(`/api/tasks/${taskId}`, taskData);
+            await api.put(`/api/tasks/${taskId}`, taskData);
             setShowEditModal(false);
             fetchTask(); // Refresh task data
         } catch (err) {
             console.error('Error updating task:', err);
-            alert('Failed to update task. Please try again.');
+            if (isNetworkError(err)) {
+                alert('Network error: Unable to connect to the server. Please check your internet connection and try again.');
+            } else {
+                alert('Failed to update task. Please try again.');
+            }
         }
     };
 
@@ -49,11 +58,15 @@ const TaskDetail = () => {
         setStatusUpdate(newStatus);
         
         try {
-            await axios.put(`/api/tasks/${taskId}`, { status: newStatus });
+            await api.put(`/api/tasks/${taskId}`, { status: newStatus });
             fetchTask(); // Refresh task data
         } catch (err) {
             console.error('Error updating status:', err);
-            alert('Failed to update status. Please try again.');
+            if (isNetworkError(err)) {
+                alert('Network error: Unable to connect to the server. Please check your internet connection and try again.');
+            } else {
+                alert('Failed to update status. Please try again.');
+            }
         }
     };
 

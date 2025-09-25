@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Badge, Dropdown, ListGroup, Button } from 'react-bootstrap';
+import { Badge, ListGroup, Button } from 'react-bootstrap';
 import { Bell, Check } from 'react-bootstrap-icons';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import './NotificationCenter.css';
 import api, { checkConnection } from '../../utils/api';
+import { isOffline, getStoredValue, setStoredValue, isNetworkError } from '../../utils/offlineUtils';
 
 const NotificationCenter = () => {
     const [tasks, setTasks] = useState([]);
@@ -16,25 +17,32 @@ const NotificationCenter = () => {
 
     // Fetch unread count
     const fetchUnreadCount = async () => {
+        // Skip fetching if we're already known to be offline
+        if (isOffline()) {
+            const lastKnownCount = getStoredValue('last_unread_count', 0);
+            setUnreadCount(lastKnownCount);
+            return;
+        }
+        
         try {
             // Use the api instance with fallback mechanism instead of axios directly
             const { data } = await api.get('/tasks/unread-count');
             setUnreadCount(data.unreadCount);
             
             // Store the last known count for offline use
-            localStorage.setItem('last_unread_count', data.unreadCount);
+            setStoredValue('last_unread_count', data.unreadCount);
             
             // If we got data and were in offline mode, try to reconnect
-            if (localStorage.getItem('offline_mode')) {
+            if (getStoredValue('offline_mode', false)) {
                 checkConnection();
             }
         } catch (error) {
             console.error('Error fetching unread count:', error);
             // If we're offline, set a default value
-            if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+            if (isNetworkError(error)) {
                 // Use last known value or default to 0
-                const lastKnownCount = localStorage.getItem('last_unread_count');
-                setUnreadCount(lastKnownCount ? parseInt(lastKnownCount, 10) : 0);
+                const lastKnownCount = getStoredValue('last_unread_count', 0);
+                setUnreadCount(lastKnownCount);
             }
         }
     };
@@ -112,9 +120,36 @@ const NotificationCenter = () => {
     // Fetch unread count on mount and every 30 seconds
     useEffect(() => {
         fetchUnreadCount();
-        const interval = setInterval(fetchUnreadCount, 30000);
         
-        return () => clearInterval(interval);
+        // Use a longer interval when offline to reduce unnecessary network requests
+        const intervalTime = isOffline() ? 120000 : 30000;
+        const interval = setInterval(fetchUnreadCount, intervalTime);
+        
+        // Listen for online/offline events to adjust behavior
+        const handleOnline = () => {
+            localStorage.removeItem('offline_mode');
+            fetchUnreadCount();
+        };
+        
+        const handleOffline = () => {
+            setStoredValue('offline_mode', true);
+        };
+        
+        // Listen for app-specific online/offline events
+        const handleAppOnline = () => {
+            fetchUnreadCount();
+        };
+        
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+        window.addEventListener('app-online', handleAppOnline);
+        
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+            window.removeEventListener('app-online', handleAppOnline);
+        };
     }, []);
 
     return (

@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Table, Badge, Button, Form, Spinner } from 'react-bootstrap';
 import { PlusLg, Pencil, Trash } from 'react-bootstrap-icons';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import TaskModal from './TaskModal';
+import api from '../../utils/api';
+import { isNetworkError } from '../../utils/offlineUtils';
 import './TaskList.css';
 
 const TaskList = () => {
@@ -26,11 +27,15 @@ const TaskList = () => {
             if (filters.status) params.status = filters.status;
             if (filters.priority) params.priority = filters.priority;
             
-            const { data } = await axios.get('/api/tasks', { params });
+            const { data } = await api.get('/api/tasks', { params });
             setTasks(data);
             setError(null);
         } catch (err) {
-            setError('Failed to load tasks. Please try again.');
+            if (isNetworkError(err)) {
+                setError('Network error: Unable to connect to the server. Please check your internet connection and try again.');
+            } else {
+                setError('Failed to load tasks. Please try again.');
+            }
             console.error('Error fetching tasks:', err);
         } finally {
             setLoading(false);
@@ -57,16 +62,20 @@ const TaskList = () => {
         try {
             if (currentTask) {
                 // Update existing task
-                await axios.put(`/api/tasks/${currentTask._id}`, taskData);
+                await api.put(`/api/tasks/${currentTask._id}`, taskData);
             } else {
                 // Create new task
-                await axios.post('/api/tasks', taskData);
+                await api.post('/api/tasks', taskData);
             }
             setShowModal(false);
             fetchTasks(); // Refresh task list
         } catch (err) {
             console.error('Error saving task:', err);
-            alert('Failed to save task. Please try again.');
+            if (isNetworkError(err)) {
+                alert('Network error: Unable to connect to the server. Please check your internet connection and try again.');
+            } else {
+                alert('Failed to save task. Please try again.');  
+            }
         }
     };
 
@@ -75,11 +84,15 @@ const TaskList = () => {
         if (!window.confirm('Are you sure you want to delete this task?')) return;
         
         try {
-            await axios.delete(`/api/tasks/${taskId}`);
+            await api.delete(`/api/tasks/${taskId}`);
             fetchTasks(); // Refresh task list
         } catch (err) {
             console.error('Error deleting task:', err);
-            alert('Failed to delete task. Please try again.');
+            if (isNetworkError(err)) {
+                alert('Network error: Unable to connect to the server. Please check your internet connection and try again.');
+            } else {
+                alert('Failed to delete task. Please try again.');
+            }
         }
     };
 

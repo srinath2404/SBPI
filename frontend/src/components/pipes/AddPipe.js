@@ -106,23 +106,23 @@ function AddPipe() {
   };
 
   // Live price preview based on weight and size
-  useEffect(() => {
-    const { colorGrade, sizeType, weight } = formData;
-    if (!colorGrade || !sizeType || !weight) {
-      setPricePreview(null);
-      return;
-    }
-    let cancel = false;
-    (async () => {
-      try {
-        const { data } = await api.get(`/price-chart/price?sizeType=${encodeURIComponent(sizeType)}&weight=${weight}`);
-        if (!cancel) setPricePreview(data.price);
-      } catch {
-        if (!cancel) setPricePreview(null);
+    useEffect(() => {
+      const { colorGrade, sizeType, weight } = formData;
+      if (!colorGrade || !sizeType || !weight) {
+        setPricePreview(null);
+        return;
       }
-    })();
-    return () => { cancel = true; };
-  }, [formData.colorGrade, formData.sizeType, formData.weight]);
+      let cancel = false;
+      (async () => {
+        try {
+          const { data } = await api.get(`/price-chart/price?sizeType=${encodeURIComponent(sizeType)}&weight=${weight}`);
+          if (!cancel) setPricePreview(data.price);
+        } catch {
+          if (!cancel) setPricePreview(null);
+        }
+      })();
+      return () => { cancel = true; };
+    }, [formData.colorGrade, formData.sizeType, formData.weight, formData]);
 
   return (
     <Box sx={{ p: { xs: 2, md: 3 } }}>

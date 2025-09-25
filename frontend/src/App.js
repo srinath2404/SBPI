@@ -15,6 +15,7 @@ import BulkExcelImport from './components/pipes/BulkExcelImport';
 import TaskPages from './components/tasks/TaskPages';
 import MailApp from './components/mail/MailApp';
 import OfflineIndicator from './components/common/OfflineIndicator';
+import OfflineHandler from './components/common/OfflineHandler';
 import { checkConnection } from './utils/api';
 // import SellRequest from './components/sales/SellRequest';
 
@@ -64,6 +65,7 @@ function App() {
       <CssBaseline />
       <Router>
         <OfflineIndicator />
+        <OfflineHandler />
         <Routes>
           <Route path="/" element={<Login />} />
           <Route path="/dashboard" element={<ManagerRoute><Dashboard /></ManagerRoute>} />

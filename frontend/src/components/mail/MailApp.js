@@ -18,7 +18,7 @@ import {
   DialogContent,
   DialogActions
 } from '@mui/material';
-import { Send as SendIcon, Refresh as RefreshIcon } from '@mui/icons-material';
+import { Send as SendIcon } from '@mui/icons-material';
 import Navbar from '../layout/Navbar';
 import api from '../../utils/api';
 
@@ -43,7 +43,7 @@ function MailApp() {
     
     setLoading(true);
     try {
-      const response = await api.post('/mail/send', {
+      await api.post('/mail/send', {
         to: recipient,
         subject,
         html: message
@@ -82,7 +82,7 @@ function MailApp() {
     
     setLoading(true);
     try {
-      const response = await api.post('/auth/forgot-password', { email: resetEmail });
+      await api.post('/auth/forgot-password', { email: resetEmail });
       
       setAlert({
         show: true,

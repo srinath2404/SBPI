@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
-import axios from 'axios';
+import api from '../../utils/api';
+import { isNetworkError } from '../../utils/offlineUtils';
 
 const TaskModal = ({ show, onHide, onSave, task }) => {
     const [users, setUsers] = useState([]);
@@ -19,10 +20,13 @@ const TaskModal = ({ show, onHide, onSave, task }) => {
     useEffect(() => {
         const fetchUsers = async () => {
             try {
-                const { data } = await axios.get('/api/workers');
+                const { data } = await api.get('/api/workers');
                 setUsers(data);
             } catch (error) {
                 console.error('Error fetching users:', error);
+                if (isNetworkError(error)) {
+                    console.warn('Network error while fetching users. Working in offline mode.');
+                }
             }
         };
 

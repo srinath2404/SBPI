@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
+import { isNetworkError } from '../../utils/offlineUtils';
 
 function Login() {
   const [credentials, setCredentials] = useState({ email: '', password: '' });
@@ -34,7 +35,12 @@ function Login() {
       localStorage.setItem('user', JSON.stringify(response.data.user));
       navigate('/dashboard');
     } catch (error) {
-      setError(error.response?.data?.message || 'Login failed');
+      // Check if this is a network error (offline mode)
+      if (isNetworkError(error)) {
+        setError('Network error: Unable to connect to the server. Please check your internet connection and try again.');
+      } else {
+        setError(error.response?.data?.message || 'Login failed');
+      }
     }
   };
 
@@ -52,7 +58,7 @@ function Login() {
         setResetMessage(response.data?.message || 'Password reset instructions sent to your email');
       } catch (err) {
         // Handle network errors
-        if (!err.response) {
+        if (isNetworkError(err)) {
           setResetSuccess(false);
           setResetMessage('Network error. Please check your internet connection and try again.');
           return;
@@ -66,7 +72,7 @@ function Login() {
             setResetMessage(resp2.data?.message || 'Password reset request sent to manager');
           } catch (workerErr) {
             // Handle network errors for worker request
-            if (!workerErr.response) {
+            if (isNetworkError(workerErr)) {
               setResetSuccess(false);
               setResetMessage('Network error. Please check your internet connection and try again.');
               return;
@@ -87,7 +93,7 @@ function Login() {
       }, 3000);
     } catch (error) {
       // Handle network errors in the outer catch
-      if (!error.response) {
+      if (isNetworkError(error)) {
         setResetSuccess(false);
         setResetMessage('Network error. Please check your internet connection and try again.');
         return;

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Box, Card, CardContent, Typography, TextField, Button, Alert } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../../utils/api';
+import { isNetworkError } from '../../utils/offlineUtils';
 
 function ResetPassword() {
   const navigate = useNavigate();
@@ -39,8 +40,12 @@ function ResetPassword() {
       setSuccess('Password reset successful. Redirecting to login...');
       setTimeout(() => navigate('/'), 2000);
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to reset password';
-      setError(msg);
+      if (isNetworkError(err)) {
+        setError('Network error: Unable to connect to the server. Please check your internet connection and try again.');
+      } else {
+        const msg = err.response?.data?.message || 'Failed to reset password';
+        setError(msg);
+      }
     }
   };
 

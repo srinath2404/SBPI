@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { isOffline, getStoredValue, setStoredValue, isNetworkError } from './offlineUtils';
 
 // Create API instance with fallback URL
 const getBaseURL = () => {
@@ -6,7 +7,7 @@ const getBaseURL = () => {
     const envUrl = process.env.REACT_APP_API_URL;
     
     // If environment variable is available and we're not in offline mode, use it
-    if (envUrl && !localStorage.getItem('offline_mode')) {
+    if (envUrl && !isOffline()) {
         return `${envUrl}/api`;
     }
     
@@ -65,6 +66,11 @@ api.interceptors.response.use(
                 data: response.data,
                 timestamp: Date.now()
             });
+            
+            // Store last known unread count for offline use
+            if (response.config.url.includes('/tasks/unread-count') && response.data && response.data.unreadCount !== undefined) {
+                localStorage.setItem('last_unread_count', response.data.unreadCount);
+            }
         }
         
         return response;
@@ -84,7 +90,7 @@ api.interceptors.response.use(
         }
         
         // Handle network errors with fallback
-        if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
+        if (isNetworkError(error)) {
             // Set offline mode flag
             localStorage.setItem('offline_mode', 'true');
             
@@ -105,10 +111,23 @@ api.interceptors.response.use(
                         timestamp: cachedResponse.timestamp
                     });
                 }
+                
+                // For specific endpoints, return default values when offline
+                if (error.config.url.includes('/tasks/unread-count')) {
+                    const lastKnownCount = localStorage.getItem('last_unread_count');
+                    return Promise.resolve({
+                        data: { unreadCount: lastKnownCount ? parseInt(lastKnownCount, 10) : 0 },
+                        status: 200,
+                        statusText: 'OK (Default)',
+                        headers: {},
+                        cached: true,
+                        timestamp: Date.now()
+                    });
+                }
             }
             
-            // Show offline notification
-            console.warn('Application is in offline mode. Some features may be limited.');
+            // Show offline notification with more specific message
+            console.warn('Application is in offline mode. Connection to server failed. Some features may be limited.');
         }
         
         return Promise.reject(error);
@@ -117,21 +136,39 @@ api.interceptors.response.use(
 
 // Check connection status and update mode
 export const checkConnection = async () => {
+    // Don't attempt connection check if browser reports offline
+    if (!navigator.onLine) {
+        localStorage.setItem('offline_mode', 'true');
+        return false;
+    }
+    
     try {
         // Try to connect to the API server
         const baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
-        await axios.get(`${baseURL}/api/health`, { timeout: 3000 });
+        await axios.get(`${baseURL}/api/health`, { timeout: 5000 });
         
+        const wasOffline = localStorage.getItem('offline_mode') === 'true';
         // If successful, clear offline mode
         localStorage.removeItem('offline_mode');
         
         // Update the API base URL
         api.defaults.baseURL = getBaseURL();
         
+        // Only dispatch event if we were previously offline
+        if (wasOffline) {
+            const onlineEvent = new CustomEvent('app-online', { detail: { message: 'Connection restored!' } });
+            window.dispatchEvent(onlineEvent);
+        }
+        
         return true;
     } catch (error) {
         // Set offline mode
         localStorage.setItem('offline_mode', 'true');
+        
+        // Dispatch offline event
+        const offlineEvent = new CustomEvent('app-offline', { detail: { message: 'You are currently offline. Some features may be limited.' } });
+        window.dispatchEvent(offlineEvent);
+        
         return false;
     }
 };
