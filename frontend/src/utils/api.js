@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { isOffline, getStoredValue, setStoredValue, isNetworkError } from './offlineUtils';
+import { isOffline, isNetworkError } from './offlineUtils';
 
 // Create API instance with fallback URL
 const getBaseURL = () => {

@@ -3,7 +3,7 @@ import { Box, Grid, Card, CardContent, Typography, Chip, Avatar, List, ListItem,
 import { Person, TrendingUp, Speed, Grade, Assessment, CalendarToday, Work, Refresh } from '@mui/icons-material';
 import Navbar from '../layout/Navbar';
 import api from '../../utils/api';
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar } from 'recharts';
 
 function WorkerDashboard() {
   const [data, setData] = useState({
@@ -176,16 +176,6 @@ function WorkerDashboard() {
       case 'C': return '#f44336';
       case 'D': return '#9c27b0';
       default: return '#757575';
-    }
-  };
-
-  const getQualityLabel = (grade) => {
-    switch(grade) {
-      case 'A': return 'Excellent';
-      case 'B': return 'Good';
-      case 'C': return 'Fair';
-      case 'D': return 'Poor';
-      default: return 'Unknown';
     }
   };
 

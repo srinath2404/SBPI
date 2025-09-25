@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Box, Grid, Card, CardContent, Typography, Chip, Avatar, List, ListItem, ListItemText, ListItemAvatar, IconButton, Tooltip } from '@mui/material';
+import { Box, Grid, Card, CardContent, Typography, Chip, Avatar, List, ListItem, ListItemText, ListItemAvatar } from '@mui/material';
 import { TrendingUp, TrendingDown, Person, Inventory, AttachMoney, Speed, Grade, Schedule } from '@mui/icons-material';
 import Navbar from '../layout/Navbar';
 import api, { checkConnection } from '../../utils/api';
@@ -20,7 +20,7 @@ function Dashboard() {
     summary: {}
   });
   const [productionStatus, setProductionStatus] = useState({});
-  const [isLoading, setIsLoading] = useState(true);
+  const [, setIsLoading] = useState(true);
 
   const monthName = (m) => ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][Math.max(0, Math.min(11, (m||1)-1))];
 
@@ -125,12 +125,6 @@ function Dashboard() {
         }
       }
     }
-  };
-
-  const getTrendIcon = (current, previous) => {
-    if (current > previous) return <TrendingUp color="success" />;
-    if (current < previous) return <TrendingDown color="error" />;
-    return <TrendingUp color="disabled" />;
   };
 
   const getQualityColor = (grade) => {

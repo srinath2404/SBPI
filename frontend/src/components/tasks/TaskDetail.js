@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Row, Col, Card, Badge, Button, Spinner, Form } from 'react-bootstrap';
 import { ArrowLeft, Pencil } from 'react-bootstrap-icons';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import TaskModal from './TaskModal';
 import api from '../../utils/api';
 import { isNetworkError } from '../../utils/offlineUtils';
@@ -9,32 +9,35 @@ import './TaskDetail.css';
 
 const TaskDetail = () => {
     const { taskId } = useParams();
-    const navigate = useNavigate();
     const [task, setTask] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState('');
     const [showEditModal, setShowEditModal] = useState(false);
     const [statusUpdate, setStatusUpdate] = useState('');
 
     // Fetch task details
-    const fetchTask = async () => {
+    const fetchTask = useCallback(async () => {
         setLoading(true);
         try {
             const { data } = await api.get(`/api/tasks/${taskId}`);
             setTask(data);
             setStatusUpdate(data.status);
-            setError(null);
+            setError('');
         } catch (err) {
             if (isNetworkError(err)) {
                 setError('Network error: Unable to connect to the server. Please check your internet connection and try again.');
             } else {
-                setError('Failed to load task details. Please try again.');
+                setError('Failed to fetch task details.');
             }
             console.error('Error fetching task:', err);
         } finally {
             setLoading(false);
         }
-    };
+    }, [taskId, api]);
+
+    useEffect(() => {
+        fetchTask();
+    }, [fetchTask]);
 
     // Handle task update
     const handleTaskUpdate = async (taskData) => {
@@ -70,16 +73,6 @@ const TaskDetail = () => {
         }
     };
 
-    // Get status badge variant
-    const getStatusBadge = (status) => {
-        switch (status) {
-            case 'completed': return 'success';
-            case 'in_progress': return 'primary';
-            case 'pending': return 'warning';
-            default: return 'secondary';
-        }
-    };
-
     // Get priority badge variant
     const getPriorityBadge = (priority) => {
         switch (priority) {
@@ -100,13 +93,6 @@ const TaskDetail = () => {
             day: 'numeric'
         });
     };
-
-    // Load task on mount
-    useEffect(() => {
-        if (taskId) {
-            fetchTask();
-        }
-    }, [taskId]);
 
     if (loading) {
         return (

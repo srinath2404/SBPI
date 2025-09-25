@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Row, Col, Card, Table, Badge, Button, Form, Spinner } from 'react-bootstrap';
 import { PlusLg, Pencil, Trash } from 'react-bootstrap-icons';
 import { useNavigate } from 'react-router-dom';
@@ -10,7 +10,7 @@ import './TaskList.css';
 const TaskList = () => {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [error, setError] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [currentTask, setCurrentTask] = useState(null);
     const [filters, setFilters] = useState({
@@ -20,7 +20,7 @@ const TaskList = () => {
     const navigate = useNavigate();
 
     // Fetch tasks with filters
-    const fetchTasks = async () => {
+    const fetchTasks = useCallback(async () => {
         setLoading(true);
         try {
             const params = {};
@@ -34,13 +34,13 @@ const TaskList = () => {
             if (isNetworkError(err)) {
                 setError('Network error: Unable to connect to the server. Please check your internet connection and try again.');
             } else {
-                setError('Failed to load tasks. Please try again.');
+                setError('Failed to fetch tasks.');
             }
             console.error('Error fetching tasks:', err);
         } finally {
             setLoading(false);
         }
-    };
+    }, [api]);
 
     // Handle filter changes
     const handleFilterChange = (e) => {

@@ -1,41 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Grid,
-  Chip,
-  IconButton,
-  Tooltip,
   Card,
   CardContent,
-  InputAdornment,
-  Collapse,
-  Alert
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Checkbox,
+  FormControlLabel,
+  Pagination,
+  Tooltip,
+  Chip,
+  Avatar
 } from '@mui/material';
-import {
-  Add as AddIcon,
-  Search as SearchIcon,
-  FilterList as FilterIcon,
-  Sort as SortIcon,
-  Visibility as ViewIcon,
-  Edit as EditIcon,
-  Delete as DeleteIcon,
-  ExpandMore as ExpandMoreIcon,
-  ExpandLess as ExpandLessIcon
-} from '@mui/icons-material';
+import { Add, Edit, Delete, Search, Clear, GetApp } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../layout/Navbar';
 import api from '../../utils/api';
@@ -59,20 +42,22 @@ function PipeList() {
   const [sortOrder, setSortOrder] = useState('desc');
   const [showFilters, setShowFilters] = useState(false);
   const [stats, setStats] = useState({});
+  const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchPipes();
-  }, []);
+  }, [fetchPipes]);
 
   useEffect(() => {
     // Only run when pipes is properly initialized
     if (Array.isArray(pipes)) {
       applyFiltersAndSearch();
     }
-  }, [pipes, searchTerm, filters, sortBy, sortOrder]);
+  }, [pipes, searchTerm, filters, sortBy, sortOrder, applyFiltersAndSearch]);
 
-  const fetchPipes = async () => {
+  const fetchPipes = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.get('/inventory/all');
@@ -93,7 +78,7 @@ function PipeList() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [api]);
 
   const calculateStats = (pipeData) => {
     if (!Array.isArray(pipeData) || !pipeData.length) return {};
@@ -126,18 +111,12 @@ function PipeList() {
     };
   };
 
-  const applyFiltersAndSearch = () => {
-    // Ensure pipes is an array before proceeding
-    if (!Array.isArray(pipes)) {
-      setFilteredPipes([]);
-      return;
-    }
-    
-    let filtered = [...pipes];
+  const applyFiltersAndSearch = useCallback(() => {
+    let tempPipes = [...pipes];
 
     // Apply search
     if (searchTerm) {
-      filtered = filtered.filter(pipe =>
+      tempPipes = tempPipes.filter(pipe =>
         pipe.serialNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         pipe.batchNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         pipe.colorGrade?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -147,47 +126,45 @@ function PipeList() {
 
     // Apply filters
     if (filters.colorGrade) {
-      filtered = filtered.filter(pipe => pipe.colorGrade === filters.colorGrade);
+      tempPipes = tempPipes.filter(pipe => pipe.colorGrade === filters.colorGrade);
     }
     if (filters.sizeType) {
-      filtered = filtered.filter(pipe => pipe.sizeType === filters.sizeType);
+      tempPipes = tempPipes.filter(pipe => pipe.sizeType === filters.sizeType);
     }
     if (filters.batchNumber) {
-      filtered = filtered.filter(pipe => pipe.batchNumber?.includes(filters.batchNumber));
+      tempPipes = tempPipes.filter(pipe => pipe.batchNumber?.includes(filters.batchNumber));
     }
     if (filters.minWeight) {
-      filtered = filtered.filter(pipe => pipe.weight >= parseFloat(filters.minWeight));
+      tempPipes = tempPipes.filter(pipe => pipe.weight >= parseFloat(filters.minWeight));
     }
     if (filters.maxWeight) {
-      filtered = filtered.filter(pipe => pipe.weight <= parseFloat(filters.maxWeight));
+      tempPipes = tempPipes.filter(pipe => pipe.weight <= parseFloat(filters.maxWeight));
     }
     if (filters.minLength) {
-      filtered = filtered.filter(pipe => pipe.length >= parseFloat(filters.minLength));
+      tempPipes = tempPipes.filter(pipe => pipe.length >= parseFloat(filters.minLength));
     }
     if (filters.maxLength) {
-      filtered = filtered.filter(pipe => pipe.length <= parseFloat(filters.maxLength));
+      tempPipes = tempPipes.filter(pipe => pipe.length <= parseFloat(filters.maxLength));
     }
 
     // Apply sorting
-    filtered.sort((a, b) => {
-      let aVal = a[sortBy];
-      let bVal = b[sortBy];
+    tempPipes.sort((a, b) => {
+      let aValue = a[sortBy];
+      let bValue = b[sortBy];
       
       if (sortBy === 'manufacturingDate') {
-        aVal = new Date(aVal);
-        bVal = new Date(bVal);
+        aValue = new Date(aValue);
+        bValue = new Date(bValue);
       }
       
       if (sortOrder === 'asc') {
-        return aVal > bVal ? 1 : -1;
+        return aValue > bValue ? 1 : -1;
       } else {
-        return aVal < bVal ? 1 : -1;
+        return aValue < bValue ? 1 : -1;
       }
     });
-
-    // Ensure we always set a valid array
-    setFilteredPipes(Array.isArray(filtered) ? filtered : []);
-  };
+    setFilteredPipes(tempPipes);
+  }, [pipes, filters, searchTerm, sortBy, sortOrder, setFilteredPipes]);
 
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({ ...prev, [field]: value }));
@@ -266,7 +243,7 @@ function PipeList() {
           <Typography variant="h4">Pipe Inventory</Typography>
           <Button
             variant="contained"
-            startIcon={<AddIcon />}
+            startIcon={<Add />}
             onClick={() => navigate('/pipes/add')}
           >
             Add New Pipe
@@ -323,7 +300,7 @@ function PipeList() {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <SearchIcon />
+                        <Search />
                       </InputAdornment>
                     ),
                   }}
