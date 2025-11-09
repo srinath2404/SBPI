@@ -1,0 +1,5 @@
+Backend/
+*.md
+docs/
+node_modules/
+
