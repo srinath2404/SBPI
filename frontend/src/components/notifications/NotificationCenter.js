@@ -1,59 +1,43 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Badge, ListGroup, Button } from 'react-bootstrap';
-import { Bell, Check } from 'react-bootstrap-icons';
-import axios from 'axios';
+import { Bell, Check, WifiOff, ExclamationTriangle } from 'react-bootstrap-icons';
 import { useNavigate } from 'react-router-dom';
 import './NotificationCenter.css';
-import api, { checkConnection } from '../../utils/api';
-import { isOffline, getStoredValue, setStoredValue, isNetworkError } from '../../utils/offlineUtils';
+import api from '../../utils/api';
 
 const NotificationCenter = () => {
     const [tasks, setTasks] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [show, setShow] = useState(false);
+    const [isOffline, setIsOffline] = useState(!navigator.onLine);
+    const [hasError, setHasError] = useState(false);
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
 
     // Fetch unread count
     const fetchUnreadCount = async () => {
-        // Skip fetching if we're already known to be offline
-        if (isOffline()) {
-            const lastKnownCount = getStoredValue('last_unread_count', 0);
-            setUnreadCount(lastKnownCount);
-            return;
-        }
+        if (isOffline) return;
         
         try {
-            // Use the api instance with fallback mechanism instead of axios directly
+            setHasError(false);
+            // Use the api instance
             const { data } = await api.get('/tasks/unread-count');
             setUnreadCount(data.unreadCount);
-            
-            // Store the last known count for offline use
-            setStoredValue('last_unread_count', data.unreadCount);
-            
-            // If we got data and were in offline mode, try to reconnect
-            if (getStoredValue('offline_mode', false)) {
-                checkConnection();
-            }
         } catch (error) {
             console.error('Error fetching unread count:', error);
-            // If we're offline, set a default value
-            if (isNetworkError(error)) {
-                // Use last known value or default to 0
-                const lastKnownCount = getStoredValue('last_unread_count', 0);
-                setUnreadCount(lastKnownCount);
-            }
+            setHasError(true);
         }
     };
 
     // Fetch tasks
     const fetchTasks = async () => {
-        if (isLoading) return;
+        if (isLoading || isOffline) return;
         
         setIsLoading(true);
         try {
-            const { data } = await axios.get('/api/tasks');
+            setHasError(false);
+            const { data } = await api.get('/tasks');
             // Sort by priority and unread status
             const sortedTasks = data.sort((a, b) => {
                 // First sort by read status
@@ -68,6 +52,7 @@ const NotificationCenter = () => {
             setTasks(sortedTasks.slice(0, 5)); // Show only 5 most recent/important
         } catch (error) {
             console.error('Error fetching tasks:', error);
+            setHasError(true);
         } finally {
             setIsLoading(false);
         }
@@ -75,12 +60,16 @@ const NotificationCenter = () => {
 
     // Mark all as read
     const markAllAsRead = async () => {
+        if (isOffline) return;
+        
         try {
-            await axios.post('/api/tasks/mark-all-read');
+            setHasError(false);
+            await api.post('/tasks/mark-all-read');
             setUnreadCount(0);
             setTasks(prev => prev.map(task => ({ ...task, read: true })));
         } catch (error) {
             console.error('Error marking tasks as read:', error);
+            setHasError(true);
         }
     };
 
@@ -117,46 +106,55 @@ const NotificationCenter = () => {
         };
     }, []);
 
-    // Fetch unread count on mount and every 30 seconds
+    // Handle online/offline status
     useEffect(() => {
-        fetchUnreadCount();
-        
-        // Use a longer interval when offline to reduce unnecessary network requests
-        const intervalTime = isOffline() ? 120000 : 30000;
-        const interval = setInterval(fetchUnreadCount, intervalTime);
-        
-        // Listen for online/offline events to adjust behavior
         const handleOnline = () => {
-            localStorage.removeItem('offline_mode');
+            setIsOffline(false);
             fetchUnreadCount();
         };
         
         const handleOffline = () => {
-            setStoredValue('offline_mode', true);
-        };
-        
-        // Listen for app-specific online/offline events
-        const handleAppOnline = () => {
-            fetchUnreadCount();
+            setIsOffline(true);
         };
         
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
-        window.addEventListener('app-online', handleAppOnline);
         
         return () => {
-            clearInterval(interval);
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
-            window.removeEventListener('app-online', handleAppOnline);
         };
     }, []);
+    
+    // Fetch unread count on mount and every 30 seconds
+    useEffect(() => {
+        if (!isOffline) {
+            fetchUnreadCount();
+            
+            // Set interval to periodically check for new notifications
+            const interval = setInterval(fetchUnreadCount, 30000);
+            
+            return () => {
+                clearInterval(interval);
+            };
+        }
+    }, [isOffline]);
 
     return (
         <div className="notification-center" ref={dropdownRef}>
-            <div className="notification-bell" onClick={toggleDropdown}>
-                <Bell size={20} />
-                {unreadCount > 0 && (
+            <div 
+                className="notification-bell" 
+                onClick={toggleDropdown}
+                title={isOffline ? "You're offline. Notifications unavailable." : hasError ? "Error loading notifications" : "Notifications"}
+            >
+                {isOffline ? (
+                    <WifiOff size={20} color="#888" />
+                ) : hasError ? (
+                    <ExclamationTriangle size={20} color="#f0ad4e" />
+                ) : (
+                    <Bell size={20} />
+                )}
+                {!isOffline && !hasError && unreadCount > 0 && (
                     <Badge pill bg="danger" className="notification-badge">
                         {unreadCount}
                     </Badge>
@@ -167,7 +165,7 @@ const NotificationCenter = () => {
                 <div className="notification-dropdown" aria-modal="true">
                     <div className="notification-header">
                         <h6>Notifications</h6>
-                        {unreadCount > 0 && (
+                        {!isOffline && !hasError && unreadCount > 0 && (
                             <Button 
                                 variant="link" 
                                 size="sm" 
@@ -180,7 +178,26 @@ const NotificationCenter = () => {
                     </div>
                     
                     <ListGroup className="notification-list">
-                        {isLoading ? (
+                        {isOffline ? (
+                            <div className="text-center p-3 d-flex flex-column align-items-center">
+                                <WifiOff size={24} className="mb-2" color="#888" />
+                                <div>You're currently offline</div>
+                                <div className="small text-muted">Notifications will update when you're back online</div>
+                            </div>
+                        ) : hasError ? (
+                            <div className="text-center p-3 d-flex flex-column align-items-center">
+                                <ExclamationTriangle size={24} className="mb-2" color="#f0ad4e" />
+                                <div>Error loading notifications</div>
+                                <Button 
+                                    variant="outline-secondary" 
+                                    size="sm" 
+                                    className="mt-2"
+                                    onClick={fetchUnreadCount}
+                                >
+                                    Try Again
+                                </Button>
+                            </div>
+                        ) : isLoading ? (
                             <div className="text-center p-3">Loading...</div>
                         ) : tasks.length > 0 ? (
                             tasks.map(task => (
@@ -213,6 +230,7 @@ const NotificationCenter = () => {
                                 navigate('/tasks');
                                 setShow(false);
                             }}
+                            disabled={isOffline}
                         >
                             View All Tasks
                         </Button>

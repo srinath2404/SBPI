@@ -136,26 +136,53 @@ exports.approveSellRequest = async (req, res) => {
                 });
             }
             
-            if (pipe.remainingLength < pipeItem.soldLength) {
+            // Determine available length:
+            // - If remainingLength > 0, pipe is available (use remainingLength)
+            // - If remainingLength is 0 or null/undefined, check if it's an old pipe:
+            //   - For old pipes (remainingLength not set), use length if length > 0
+            //   - For new pipes, remainingLength === 0 means fully sold
+            let availableLength = 0;
+            if (pipe.remainingLength != null) {
+                // remainingLength field exists
+                if (pipe.remainingLength > 0) {
+                    availableLength = pipe.remainingLength;
+                } else {
+                    // remainingLength is 0 - pipe is fully sold
+                    availableLength = 0;
+                }
+            } else {
+                // remainingLength is null/undefined - old pipe schema, use length
+                availableLength = pipe.length || 0;
+            }
+            
+            if (availableLength < pipeItem.soldLength) {
                 return res.status(400).json({
                     message: MESSAGES.INSUFFICIENT_LENGTH,
                     serialNumber: pipeItem.serialNumber,
                     requested: pipeItem.soldLength,
-                    available: pipe.remainingLength
+                    available: availableLength
                 });
             }
             
-            // If selling the entire pipe
-            if (pipe.remainingLength === pipeItem.soldLength) {
-                // Update pipe remaining length to 0
-                await Pipe.findByIdAndUpdate(pipe._id, {
-                    remainingLength: 0
-                });
+            // Calculate remaining length after sale
+            const newRemainingLength = availableLength - pipeItem.soldLength;
+            
+            // If selling the entire pipe (or very close to it, within 0.01 tolerance)
+            if (newRemainingLength <= 0.01) {
+                // Remove pipe from inventory by deleting it
+                await Pipe.findByIdAndDelete(pipe._id);
             } else {
                 // If selling part of the pipe
-                // Update the original pipe's remaining length
+                // Calculate proportional weight for remaining length
+                const weightRatio = newRemainingLength / availableLength;
+                const newWeight = pipe.weight * weightRatio;
+                
+                // Update the original pipe with remaining length and adjusted weight
+                // Keep original length for record-keeping, only update remainingLength
                 await Pipe.findByIdAndUpdate(pipe._id, {
-                    remainingLength: pipe.remainingLength - pipeItem.soldLength
+                    remainingLength: newRemainingLength,
+                    weight: newWeight
+                    // Note: We keep the original length field unchanged for historical record
                 });
             }
         }

@@ -1,13 +1,15 @@
 import React, { useState, useCallback } from 'react';
-import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress, Alert } from '@mui/material';
-import { UploadFile as UploadFileIcon } from '@mui/icons-material';
+import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress, Alert, Card, CardContent, Grid, FormControl, InputLabel, Select, MenuItem, FormControlLabel, Checkbox, TextField, Stack, Pagination } from '@mui/material';
+import { UploadFile as UploadFileIcon, CloudUpload } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import api from '../../utils/api';
+import Navbar from '../layout/Navbar';
 
 function BulkExcelImport() {
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [preview, setPreview] = useState([]);
   const [sheetName, setSheetName] = useState('');
   const [commitResult, setCommitResult] = useState(null);
@@ -119,7 +121,7 @@ function BulkExcelImport() {
       const updates = {};
       fields.forEach(field => {
         // Only apply fields that have values
-        if (sourceRow[field] !== undefined) {
+        if (sourceRow[field] !== undefined && sourceRow[field] !== null && sourceRow[field] !== '') {
           updates[field] = sourceRow[field];
         }
       });
@@ -128,7 +130,9 @@ function BulkExcelImport() {
     }));
     
     // Show success message
-    setError(`Applied row ${sourceRowIdx + 1} values to all other rows`);
+    setSuccess(`Applied row ${sourceRowIdx + 1} values (${fields.join(', ')}) to all other rows`);
+    setError(''); // Clear any error messages
+    setTimeout(() => setSuccess(''), 3000);
   };
 
   const onCommit = async () => {
@@ -188,7 +192,9 @@ function BulkExcelImport() {
     }));
     
     // Show success message
-    setError(`Applied bulk edits to all rows`);
+    setSuccess(`Applied bulk edits to all rows`);
+    setError(''); // Clear any error messages
+    setTimeout(() => setSuccess(''), 3000);
     
     // Reset checkboxes after applying
     setApplyToAll({
@@ -201,34 +207,76 @@ function BulkExcelImport() {
   };
 
   return (
-    <Box sx={{ p: 3, maxWidth: 1100, mx: 'auto' }}>
-      <Typography variant="h4" gutterBottom>
-        Import Pipes from Excel (Preview, Edit, Commit)
-      </Typography>
+    <Box>
+      <Navbar />
+      <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
+        <Typography variant="h4" gutterBottom sx={{ mb: 3, fontWeight: 600 }}>
+          Import Pipes from Excel
+        </Typography>
 
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Typography variant="body1" sx={{ mb: 2 }}>
-            From Excel you only need to provide serial number, Length (MTR), and Weight (KG). You can fill color grade, size type, section, batch, and date here before committing.
-          </Typography>
+        <Card sx={{ mb: 3, boxShadow: 3 }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+              Upload Excel File
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              From Excel you only need to provide serial number, Length (MTR), and Weight (KG). 
+              You can fill color grade, size type, section, batch, and date here before committing.
+            </Typography>
 
-          <input type="file" accept=".xlsx,.xls,.csv" onChange={onFileChange} />
+            <Box sx={{ mb: 3 }}>
+              <input 
+                type="file" 
+                accept=".xlsx,.xls,.csv" 
+                onChange={onFileChange}
+                style={{ display: 'none' }}
+                id="excel-file-input"
+              />
+              <label htmlFor="excel-file-input">
+                <Button
+                  variant="outlined"
+                  component="span"
+                  startIcon={<CloudUpload />}
+                  sx={{ mb: 2 }}
+                >
+                  Choose Excel File
+                </Button>
+              </label>
+              {file && (
+                <Typography variant="body2" color="success.main" sx={{ ml: 2, display: 'inline-block' }}>
+                  ✓ {file.name}
+                </Typography>
+              )}
+            </Box>
 
-          <Box sx={{ mt: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-            <Button variant="outlined" onClick={onPreview} disabled={loading || !file} startIcon={loading ? <CircularProgress size={18} /> : null}>
-              {loading ? 'Processing…' : 'Preview'}
-            </Button>
-            <Button variant="contained" onClick={onCommit} disabled={loading || !preview.length}>
-              Commit to Inventory
-            </Button>
-            {preview.length > 0 && (
-              <Button variant="text" onClick={fillDefaults} disabled={loading}>
-                Fill Defaults (Grade A, 2 inch)
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <Button 
+                variant="contained" 
+                onClick={onPreview} 
+                disabled={loading || !file} 
+                startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <UploadFileIcon />}
+                sx={{ minWidth: 120 }}
+              >
+                {loading ? 'Processing…' : 'Preview'}
               </Button>
-            )}
-          </Box>
+              <Button 
+                variant="contained" 
+                color="success"
+                onClick={onCommit} 
+                disabled={loading || !preview.length}
+                sx={{ minWidth: 150 }}
+              >
+                Commit to Inventory
+              </Button>
+              {preview.length > 0 && (
+                <Button variant="outlined" onClick={fillDefaults} disabled={loading}>
+                  Fill Defaults (Grade A, 2 inch)
+                </Button>
+              )}
+            </Box>
 
           {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+          {success && <Alert severity="success" sx={{ mt: 2 }}>{success}</Alert>}
           {commitResult && (
             <Alert severity="success" sx={{ mt: 2 }}>
               {commitResult.message} {commitResult.errors?.length ? `(with ${commitResult.errors.length} warnings)` : ''}
@@ -238,9 +286,23 @@ function BulkExcelImport() {
       </Card>
       
       {preview.length > 0 && (
-        <Card sx={{ mb: 3 }}>
+        <Card sx={{ mb: 3, boxShadow: 3 }}>
           <CardContent>
-            <Typography variant="h6" gutterBottom>Apply to All Rows</Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>Bulk Edit Options</Typography>
+              <Button 
+                variant="contained" 
+                color="primary"
+                onClick={() => {
+                  if (preview.length > 0) {
+                    applyToAllRows(0, ['colorGrade', 'sizeType', 'section', 'batchNumber', 'manufacturingDate']);
+                  }
+                }}
+                disabled={preview.length === 0}
+              >
+                Use First Row for All Rows
+              </Button>
+            </Box>
             <Grid container spacing={2}>
               {/* Color Grade */}
               <Grid item xs={12} sm={6} md={4}>
@@ -379,33 +441,44 @@ function BulkExcelImport() {
       )}
 
       {preview.length > 0 && (
-        <Card>
+        <Card sx={{ boxShadow: 3 }}>
           <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Preview: {sheetName} (showing {rowsPerPage} rows per page)
-            </Typography>
-            <Box sx={{ overflowX: 'auto' }}>
-              <Table size="small">
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                Preview: {sheetName}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Showing {rowsPerPage} rows per page
+              </Typography>
+            </Box>
+            <Box sx={{ overflowX: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+              <Table size="small" sx={{ minWidth: 1200 }}>
                 <TableHead>
-                  <TableRow>
-                    <TableCell>serialNumber</TableCell>
-                    <TableCell>colorGrade</TableCell>
-                    <TableCell>sizeType</TableCell>
-                    <TableCell>section</TableCell>
-                    <TableCell>length</TableCell>
-                    <TableCell>weight</TableCell>
-                    <TableCell>manufacturingDate</TableCell>
-                    <TableCell>batchNumber</TableCell>
-                    <TableCell>issues</TableCell>
-                    <TableCell>price</TableCell>
-                    <TableCell>Actions</TableCell>
+                  <TableRow sx={{ bgcolor: 'primary.main' }}>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>Serial Number</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>Color Grade</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>Size Type</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>Section</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>Length (MTR)</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>Weight (KG)</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>Manufacturing Date</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>Batch Number</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>Status</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>Price</TableCell>
+                    <TableCell sx={{ color: 'white', fontWeight: 600 }}>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {preview.slice((page - 1) * rowsPerPage, page * rowsPerPage).map((r, idx) => {
                     const actualIdx = idx + (page - 1) * rowsPerPage;
                     return (
-                    <TableRow key={idx} sx={{ bgcolor: r.validation?.isValid ? 'inherit' : 'rgba(255,0,0,0.05)' }}>
+                    <TableRow 
+                      key={idx} 
+                      sx={{ 
+                        bgcolor: r.validation?.isValid ? 'inherit' : 'rgba(255,0,0,0.05)',
+                        '&:hover': { bgcolor: 'action.hover' }
+                      }}
+                    >
                       <TableCell>
                         <TextField size="small" value={r.serialNumber} onChange={(e) => updateCell(actualIdx, 'serialNumber', e.target.value)} />
                       </TableCell>
@@ -473,6 +546,7 @@ function BulkExcelImport() {
                         <Button 
                           size="small" 
                           variant="outlined" 
+                          color="primary"
                           onClick={() => applyToAllRows(actualIdx, ['colorGrade', 'sizeType', 'section', 'batchNumber', 'manufacturingDate'])}
                         >
                           Apply to All
@@ -517,6 +591,7 @@ function BulkExcelImport() {
           </CardContent>
         </Card>
       )}
+      </Box>
     </Box>
   );
 }

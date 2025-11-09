@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Grid, Card, CardContent, Typography, Chip, Avatar, List, ListItem, ListItemText, ListItemAvatar, LinearProgress, Paper, CircularProgress, Button, Backdrop } from '@mui/material';
-import { Person, TrendingUp, Speed, Grade, Assessment, CalendarToday, Work, Refresh } from '@mui/icons-material';
+import { Box, Grid, Card, CardContent, Typography, Chip, Avatar, List, ListItem, ListItemText, ListItemAvatar, LinearProgress, Paper, CircularProgress, Button, Backdrop, Alert } from '@mui/material';
+import { Person, TrendingUp, Speed, Grade, Assessment, CalendarToday, Work, Refresh, WifiOff, SignalWifiOff } from '@mui/icons-material';
 import Navbar from '../layout/Navbar';
 import api from '../../utils/api';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar } from 'recharts';
@@ -22,15 +22,47 @@ function WorkerDashboard() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [globalLoading, setGlobalLoading] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     fetchWorkerData();
+    
+    // Add event listeners for online/offline status
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    // Clean up event listeners
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
   }, []);
+  
+  // Handle online status change
+  const handleOnline = () => {
+    setIsOffline(false);
+    fetchWorkerData(); // Refresh data when coming back online
+  };
+  
+  // Handle offline status change
+  const handleOffline = () => {
+    setIsOffline(true);
+  };
 
   const fetchWorkerData = async () => {
+    // Don't attempt to fetch if offline
+    if (isOffline) {
+      setIsLoading(false);
+      setGlobalLoading(false);
+      return;
+    }
+    
     try {
       setIsLoading(true);
       setGlobalLoading(true);
+      setHasError(false); // Reset error state before attempting fetch
+      
       // Add a timestamp to prevent caching issues
       const response = await api.get('/dashboard/worker', {
         params: { _t: new Date().getTime() }
@@ -58,6 +90,13 @@ function WorkerDashboard() {
       }
     } catch (error) {
       console.error('Error fetching worker data:', error);
+      setHasError(true); // Set error state on failure
+      
+      // Check if the error is due to network connectivity
+      if (error.message === 'Network Error' || !navigator.onLine) {
+        setIsOffline(true);
+      }
+      
       // Set default data on error
       setData({
         monthlyProduction: [],
@@ -93,8 +132,15 @@ function WorkerDashboard() {
   };
 
   const fetchSummaryData = async () => {
+    // Don't attempt to fetch if offline
+    if (isOffline) {
+      return;
+    }
+    
     try {
       setLoadingStates(prev => ({ ...prev, summary: true }));
+      setHasError(false); // Reset error state before attempting fetch
+      
       const response = await api.get('/dashboard/worker', {
         params: { _t: new Date().getTime() }
       });
@@ -107,14 +153,27 @@ function WorkerDashboard() {
       }
     } catch (error) {
       console.error('Error fetching summary data:', error);
+      setHasError(true); // Set error state on failure
+      
+      // Check if the error is due to network connectivity
+      if (error.message === 'Network Error' || !navigator.onLine) {
+        setIsOffline(true);
+      }
     } finally {
       setLoadingStates(prev => ({ ...prev, summary: false }));
     }
   };
 
   const fetchQualityData = async () => {
+    // Don't attempt to fetch if offline
+    if (isOffline) {
+      return;
+    }
+    
     try {
       setLoadingStates(prev => ({ ...prev, quality: true }));
+      setHasError(false); // Reset error state before attempting fetch
+      
       const response = await api.get('/dashboard/worker', {
         params: { _t: new Date().getTime() }
       });
@@ -126,14 +185,27 @@ function WorkerDashboard() {
       }
     } catch (error) {
       console.error('Error fetching quality data:', error);
+      setHasError(true); // Set error state on failure
+      
+      // Check if the error is due to network connectivity
+      if (error.message === 'Network Error' || !navigator.onLine) {
+        setIsOffline(true);
+      }
     } finally {
       setLoadingStates(prev => ({ ...prev, quality: false }));
     }
   };
 
   const fetchProductionData = async () => {
+    // Don't attempt to fetch if offline
+    if (isOffline) {
+      return;
+    }
+    
     try {
       setLoadingStates(prev => ({ ...prev, production: true }));
+      setHasError(false); // Reset error state before attempting fetch
+      
       const response = await api.get('/dashboard/worker', {
         params: { _t: new Date().getTime() }
       });
@@ -145,14 +217,27 @@ function WorkerDashboard() {
       }
     } catch (error) {
       console.error('Error fetching production data:', error);
+      setHasError(true); // Set error state on failure
+      
+      // Check if the error is due to network connectivity
+      if (error.message === 'Network Error' || !navigator.onLine) {
+        setIsOffline(true);
+      }
     } finally {
       setLoadingStates(prev => ({ ...prev, production: false }));
     }
   };
 
   const fetchRecentWorkData = async () => {
+    // Don't attempt to fetch if offline
+    if (isOffline) {
+      return;
+    }
+    
     try {
       setLoadingStates(prev => ({ ...prev, recentWork: true }));
+      setHasError(false); // Reset error state before attempting fetch
+      
       const response = await api.get('/dashboard/worker', {
         params: { _t: new Date().getTime() }
       });
@@ -164,6 +249,12 @@ function WorkerDashboard() {
       }
     } catch (error) {
       console.error('Error fetching recent work data:', error);
+      setHasError(true); // Set error state on failure
+      
+      // Check if the error is due to network connectivity
+      if (error.message === 'Network Error' || !navigator.onLine) {
+        setIsOffline(true);
+      }
     } finally {
       setLoadingStates(prev => ({ ...prev, recentWork: false }));
     }
@@ -198,6 +289,56 @@ function WorkerDashboard() {
   return (
     <Box>
       <Navbar />
+      {isOffline && (
+        <Alert 
+          severity="warning" 
+          icon={<WifiOff />}
+          sx={{ 
+            borderRadius: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            py: 1
+          }}
+        >
+          You are currently offline. Some features may be unavailable.
+          <Button 
+            variant="outlined" 
+            size="small" 
+            sx={{ ml: 2 }}
+            onClick={() => {
+              if (navigator.onLine) {
+                setIsOffline(false);
+                fetchWorkerData();
+              }
+            }}
+          >
+            Try Again
+          </Button>
+        </Alert>
+      )}
+      {!isOffline && hasError && (
+        <Alert 
+          severity="error"
+          sx={{ 
+            borderRadius: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            py: 1
+          }}
+        >
+          Error loading dashboard data.
+          <Button 
+            variant="outlined" 
+            size="small" 
+            sx={{ ml: 2 }}
+            onClick={fetchWorkerData}
+          >
+            Try Again
+          </Button>
+        </Alert>
+      )}
       <Backdrop
         sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
         open={globalLoading}
@@ -241,9 +382,9 @@ function WorkerDashboard() {
                 startIcon={<Refresh />} 
                 size="small" 
                 onClick={() => refreshSectionData('summary')}
-                disabled={loadingStates.summary}
+                disabled={loadingStates.summary || isOffline}
               >
-                {loadingStates.summary ? 'Refreshing...' : 'Refresh Summary'}
+                {loadingStates.summary ? 'Refreshing...' : isOffline ? 'Offline' : 'Refresh Summary'}
               </Button>
             </Box>
             {loadingStates.summary && (
@@ -343,9 +484,9 @@ function WorkerDashboard() {
                 startIcon={<Refresh />} 
                 size="small" 
                 onClick={() => refreshSectionData('quality')}
-                disabled={loadingStates.quality}
+                disabled={loadingStates.quality || isOffline}
               >
-                {loadingStates.quality ? 'Refreshing...' : 'Refresh Quality Data'}
+                {loadingStates.quality ? 'Refreshing...' : isOffline ? 'Offline' : 'Refresh Quality Data'}
               </Button>
             </Box>
             {loadingStates.quality && (
@@ -454,9 +595,9 @@ function WorkerDashboard() {
                 startIcon={<Refresh />} 
                 size="small" 
                 onClick={() => refreshSectionData('production')}
-                disabled={loadingStates.production}
+                disabled={loadingStates.production || isOffline}
               >
-                {loadingStates.production ? 'Refreshing...' : 'Refresh Production Data'}
+                {loadingStates.production ? 'Refreshing...' : isOffline ? 'Offline' : 'Refresh Production Data'}
               </Button>
             </Box>
             {loadingStates.production && (
@@ -499,9 +640,9 @@ function WorkerDashboard() {
                 startIcon={<Refresh />} 
                 size="small" 
                 onClick={() => refreshSectionData('recentWork')}
-                disabled={loadingStates.recentWork}
+                disabled={loadingStates.recentWork || isOffline}
               >
-                {loadingStates.recentWork ? 'Refreshing...' : 'Refresh Recent Work'}
+                {loadingStates.recentWork ? 'Refreshing...' : isOffline ? 'Offline' : 'Refresh Recent Work'}
               </Button>
             </Box>
             {loadingStates.recentWork && (

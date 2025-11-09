@@ -1,14 +1,32 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Container, Row, Col, Card, Badge, Button, Spinner, Form } from 'react-bootstrap';
-import { ArrowLeft, Pencil } from 'react-bootstrap-icons';
-import { useParams } from 'react-router-dom';
+import {
+    Box,
+    Button,
+    Typography,
+    Card,
+    CardContent,
+    CardHeader,
+    Chip,
+    CircularProgress,
+    Alert,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    Grid,
+    Divider,
+    IconButton,
+    Tooltip
+} from '@mui/material';
+import { ArrowBack, Edit } from '@mui/icons-material';
+import { useParams, useNavigate } from 'react-router-dom';
 import TaskModal from './TaskModal';
 import api from '../../utils/api';
-import { isNetworkError } from '../../utils/offlineUtils';
-import './TaskDetail.css';
+import Navbar from '../layout/Navbar';
 
 const TaskDetail = () => {
     const { taskId } = useParams();
+    const navigate = useNavigate();
     const [task, setTask] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -19,21 +37,17 @@ const TaskDetail = () => {
     const fetchTask = useCallback(async () => {
         setLoading(true);
         try {
-            const { data } = await api.get(`/api/tasks/${taskId}`);
+            const { data } = await api.get(`/tasks/${taskId}`);
             setTask(data);
             setStatusUpdate(data.status);
             setError('');
         } catch (err) {
-            if (isNetworkError(err)) {
-                setError('Network error: Unable to connect to the server. Please check your internet connection and try again.');
-            } else {
-                setError('Failed to fetch task details.');
-            }
+            setError('Failed to fetch task details. Please check your internet connection and try again.');
             console.error('Error fetching task:', err);
         } finally {
             setLoading(false);
         }
-    }, [taskId, api]);
+    }, [taskId]);
 
     useEffect(() => {
         fetchTask();
@@ -42,16 +56,12 @@ const TaskDetail = () => {
     // Handle task update
     const handleTaskUpdate = async (taskData) => {
         try {
-            await api.put(`/api/tasks/${taskId}`, taskData);
+            await api.put(`/tasks/${taskId}`, taskData);
             setShowEditModal(false);
             fetchTask(); // Refresh task data
         } catch (err) {
             console.error('Error updating task:', err);
-            if (isNetworkError(err)) {
-                alert('Network error: Unable to connect to the server. Please check your internet connection and try again.');
-            } else {
-                alert('Failed to update task. Please try again.');
-            }
+            setError('Failed to update task. Please check your internet connection and try again.');
         }
     };
 
@@ -61,25 +71,21 @@ const TaskDetail = () => {
         setStatusUpdate(newStatus);
         
         try {
-            await api.put(`/api/tasks/${taskId}`, { status: newStatus });
+            await api.put(`/tasks/${taskId}`, { status: newStatus });
             fetchTask(); // Refresh task data
         } catch (err) {
             console.error('Error updating status:', err);
-            if (isNetworkError(err)) {
-                alert('Network error: Unable to connect to the server. Please check your internet connection and try again.');
-            } else {
-                alert('Failed to update status. Please try again.');
-            }
+            setError('Failed to update status. Please check your internet connection and try again.');
         }
     };
 
-    // Get priority badge variant
-    const getPriorityBadge = (priority) => {
+    // Get priority chip color
+    const getPriorityColor = (priority) => {
         switch (priority) {
-            case 'high': return 'danger';
+            case 'high': return 'error';
             case 'medium': return 'warning';
             case 'low': return 'success';
-            default: return 'secondary';
+            default: return 'default';
         }
     };
 
@@ -96,123 +102,203 @@ const TaskDetail = () => {
 
     if (loading) {
         return (
-            <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '300px' }}>
-                <Spinner animation="border" />
-            </Container>
+            <Box>
+                <Navbar />
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+                    <CircularProgress />
+                </Box>
+            </Box>
         );
     }
 
     if (error || !task) {
         return (
-            <Container className="mt-4">
-                <Card>
-                    <Card.Body className="text-center">
-                        <Card.Title className="text-danger">Error</Card.Title>
-                        <Card.Text>{error || 'Task not found'}</Card.Text>
-                        <Button variant="primary" onClick={() => navigate('/tasks')}>
-                            <ArrowLeft className="me-2" /> Back to Tasks
-                        </Button>
-                    </Card.Body>
-                </Card>
-            </Container>
+            <Box>
+                <Navbar />
+                <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
+                    <Card sx={{ boxShadow: 3 }}>
+                        <CardContent sx={{ textAlign: 'center', py: 5 }}>
+                            <Alert severity="error" sx={{ mb: 3 }}>
+                                {error || 'Task not found'}
+                            </Alert>
+                            <Button 
+                                variant="contained" 
+                                startIcon={<ArrowBack />}
+                                onClick={() => navigate('/tasks')}
+                            >
+                                Back to Tasks
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </Box>
+            </Box>
         );
     }
 
     return (
-        <Container className="task-detail-container">
-            <Row className="mb-4">
-                <Col>
-                    <div className="d-flex justify-content-between align-items-center mb-3">
-                        <Button 
-                            variant="outline-secondary" 
-                            onClick={() => navigate('/tasks')}
-                        >
-                            <ArrowLeft className="me-2" /> Back to Tasks
-                        </Button>
-                        <Button 
-                            variant="primary" 
-                            onClick={() => setShowEditModal(true)}
-                        >
-                            <Pencil className="me-2" /> Edit Task
-                        </Button>
-                    </div>
-                    
-                    <Card>
-                        <Card.Header>
-                            <h4 className="mb-0">{task.title}</h4>
-                        </Card.Header>
-                        <Card.Body>
-                            <Row className="mb-4">
-                                <Col md={8}>
-                                    <h5>Description</h5>
-                                    <p className="task-description">{task.description}</p>
-                                </Col>
-                                <Col md={4}>
-                                    <div className="task-meta">
-                                        <div className="task-meta-item">
-                                            <span className="meta-label">Status:</span>
-                                            <Form.Select 
-                                                value={statusUpdate} 
-                                                onChange={handleStatusChange}
-                                                className="status-select"
-                                            >
-                                                <option value="pending">Pending</option>
-                                                <option value="in_progress">In Progress</option>
-                                                <option value="completed">Completed</option>
-                                            </Form.Select>
-                                        </div>
-                                        
-                                        <div className="task-meta-item">
-                                            <span className="meta-label">Priority:</span>
-                                            <Badge bg={getPriorityBadge(task.priority)}>
-                                                {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                                            </Badge>
-                                        </div>
-                                        
-                                        <div className="task-meta-item">
-                                            <span className="meta-label">Assigned To:</span>
-                                            <span>{task.assignedTo?.name || 'N/A'}</span>
-                                        </div>
-                                        
-                                        <div className="task-meta-item">
-                                            <span className="meta-label">Created By:</span>
-                                            <span>{task.createdBy?.name || 'N/A'}</span>
-                                        </div>
-                                        
-                                        <div className="task-meta-item">
-                                            <span className="meta-label">Created On:</span>
-                                            <span>{formatDate(task.createdAt)}</span>
-                                        </div>
-                                        
-                                        {task.dueDate && (
-                                            <div className="task-meta-item">
-                                                <span className="meta-label">Due Date:</span>
-                                                <span>{formatDate(task.dueDate)}</span>
-                                            </div>
-                                        )}
-                                        
-                                        {task.completedAt && (
-                                            <div className="task-meta-item">
-                                                <span className="meta-label">Completed On:</span>
-                                                <span>{formatDate(task.completedAt)}</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </Col>
-                            </Row>
-                        </Card.Body>
-                    </Card>
-                </Col>
-            </Row>
+        <Box>
+            <Navbar />
+            <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                    <Button 
+                        variant="outlined" 
+                        startIcon={<ArrowBack />}
+                        onClick={() => navigate('/tasks')}
+                    >
+                        Back to Tasks
+                    </Button>
+                    <Button 
+                        variant="contained" 
+                        startIcon={<Edit />}
+                        onClick={() => setShowEditModal(true)}
+                    >
+                        Edit Task
+                    </Button>
+                </Box>
 
-            {/* Edit Task Modal */}
-            <TaskModal 
-                show={showEditModal}
-                onHide={() => setShowEditModal(false)}
-                onSave={handleTaskUpdate}
-                task={task}
-            />
-        </Container>
+                {error && (
+                    <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
+                        {error}
+                    </Alert>
+                )}
+
+                <Card sx={{ boxShadow: 3 }}>
+                    <CardHeader
+                        title={
+                            <Typography variant="h4" sx={{ fontWeight: 600 }}>
+                                {task.title}
+                            </Typography>
+                        }
+                    />
+                    <CardContent>
+                        <Grid container spacing={3}>
+                            <Grid item xs={12} md={8}>
+                                <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                                    Description
+                                </Typography>
+                                <Typography 
+                                    variant="body1" 
+                                    sx={{ 
+                                        whiteSpace: 'pre-wrap',
+                                        color: 'text.secondary',
+                                        lineHeight: 1.8
+                                    }}
+                                >
+                                    {task.description || 'No description provided.'}
+                                </Typography>
+                            </Grid>
+                            <Grid item xs={12} md={4}>
+                                <Card variant="outlined" sx={{ p: 2 }}>
+                                    <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                                        Task Details
+                                    </Typography>
+                                    
+                                    <Box sx={{ mb: 2 }}>
+                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                            Status
+                                        </Typography>
+                                        <FormControl fullWidth size="small">
+                                            <InputLabel>Status</InputLabel>
+                                            <Select
+                                                value={statusUpdate}
+                                                label="Status"
+                                                onChange={handleStatusChange}
+                                            >
+                                                <MenuItem value="pending">Pending</MenuItem>
+                                                <MenuItem value="in_progress">In Progress</MenuItem>
+                                                <MenuItem value="completed">Completed</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                    </Box>
+
+                                    <Divider sx={{ my: 2 }} />
+
+                                    <Box sx={{ mb: 2 }}>
+                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                            Priority
+                                        </Typography>
+                                        <Chip 
+                                            label={task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} 
+                                            color={getPriorityColor(task.priority)}
+                                            size="medium"
+                                        />
+                                    </Box>
+
+                                    <Divider sx={{ my: 2 }} />
+
+                                    <Box sx={{ mb: 2 }}>
+                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                            Assigned To
+                                        </Typography>
+                                        <Typography variant="body1">
+                                            {task.assignedTo?.name || 'N/A'}
+                                        </Typography>
+                                    </Box>
+
+                                    <Divider sx={{ my: 2 }} />
+
+                                    <Box sx={{ mb: 2 }}>
+                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                            Created By
+                                        </Typography>
+                                        <Typography variant="body1">
+                                            {task.createdBy?.name || 'N/A'}
+                                        </Typography>
+                                    </Box>
+
+                                    <Divider sx={{ my: 2 }} />
+
+                                    <Box sx={{ mb: 2 }}>
+                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                            Created On
+                                        </Typography>
+                                        <Typography variant="body1">
+                                            {formatDate(task.createdAt)}
+                                        </Typography>
+                                    </Box>
+
+                                    {task.dueDate && (
+                                        <>
+                                            <Divider sx={{ my: 2 }} />
+                                            <Box sx={{ mb: 2 }}>
+                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                                    Due Date
+                                                </Typography>
+                                                <Typography variant="body1">
+                                                    {formatDate(task.dueDate)}
+                                                </Typography>
+                                            </Box>
+                                        </>
+                                    )}
+
+                                    {task.completedAt && (
+                                        <>
+                                            <Divider sx={{ my: 2 }} />
+                                            <Box>
+                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                                                    Completed On
+                                                </Typography>
+                                                <Typography variant="body1">
+                                                    {formatDate(task.completedAt)}
+                                                </Typography>
+                                            </Box>
+                                        </>
+                                    )}
+                                </Card>
+                            </Grid>
+                        </Grid>
+                    </CardContent>
+                </Card>
+
+                {/* Edit Task Modal */}
+                <TaskModal 
+                    open={showEditModal}
+                    onClose={() => setShowEditModal(false)}
+                    onSave={handleTaskUpdate}
+                    task={task}
+                />
+            </Box>
+        </Box>
     );
 };
 

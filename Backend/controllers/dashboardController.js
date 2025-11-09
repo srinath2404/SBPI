@@ -279,7 +279,7 @@ exports.getWorkerDashboard = async (req, res) => {
         const currentMonth = new Date().getMonth() + 1;
         const currentYear = new Date().getFullYear();
 
-        // Worker's monthly production
+        // Worker's monthly production - count all pipes created by worker, regardless of remaining length
         const monthlyProduction = await Pipe.aggregate([
             {
                 $match: {
@@ -301,7 +301,7 @@ exports.getWorkerDashboard = async (req, res) => {
             { $sort: { _id: 1 } }
         ]);
 
-        // Worker's current month stats
+        // Worker's current month stats - count all pipes created this month
         const currentMonthStart = new Date(currentYear, currentMonth - 1, 1);
         const currentMonthEnd = new Date(currentYear, currentMonth, 0, 23, 59, 59);
 
@@ -322,6 +322,7 @@ exports.getWorkerDashboard = async (req, res) => {
                     totalWeight: { $sum: "$weight" },
                     totalLength: { $sum: "$length" },
                     avgWeight: { $avg: "$weight" },
+                    avgLength: { $avg: "$length" },
                     qualityGradeA: { $sum: { $cond: [{ $eq: ["$colorGrade", "A"] }, 1, 0] } },
                     qualityGradeB: { $sum: { $cond: [{ $eq: ["$colorGrade", "B"] }, 1, 0] } },
                     qualityGradeC: { $sum: { $cond: [{ $eq: ["$colorGrade", "C"] }, 1, 0] } }
@@ -329,19 +330,27 @@ exports.getWorkerDashboard = async (req, res) => {
             },
         ]);
 
-        // Worker's recent work
-        const recentWork = await Pipe.find({ worker: workerId })
+        // Worker's recent work - only show pipes with remaining length > 0 (available in inventory)
+        const recentWork = await Pipe.find({ 
+            worker: workerId,
+            $or: [
+                { remainingLength: { $gt: 0 } },
+                { remainingLength: { $exists: false } }, // For pipes created before remainingLength was added
+                { remainingLength: null }
+            ]
+        })
             .sort({ manufacturingDate: -1 })
             .limit(10)
-            .select('serialNumber colorGrade sizeType length weight manufacturingDate');
+            .select('serialNumber colorGrade sizeType length weight manufacturingDate remainingLength');
 
-        // Worker's quality trend
+        // Worker's quality trend - last 3 months
+        const threeMonthsAgo = new Date(currentYear, currentMonth - 3, 1);
         const qualityTrend = await Pipe.aggregate([
             {
                 $match: {
                     worker: workerId,
                     manufacturingDate: {
-                        $gte: new Date(currentYear, currentMonth - 3, 1), // Last 3 months
+                        $gte: threeMonthsAgo,
                     },
                 },
             },

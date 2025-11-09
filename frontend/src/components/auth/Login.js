@@ -14,7 +14,6 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
-import { isNetworkError } from '../../utils/offlineUtils';
 
 function Login() {
   const [credentials, setCredentials] = useState({ email: '', password: '' });
@@ -35,12 +34,7 @@ function Login() {
       localStorage.setItem('user', JSON.stringify(response.data.user));
       navigate('/dashboard');
     } catch (error) {
-      // Check if this is a network error (offline mode)
-      if (isNetworkError(error)) {
-        setError('Network error: Unable to connect to the server. Please check your internet connection and try again.');
-      } else {
-        setError(error.response?.data?.message || 'Login failed');
-      }
+      setError(error.response?.data?.message || 'Login failed. Please check your internet connection and try again.');
     }
   };
 
@@ -57,12 +51,9 @@ function Login() {
         setResetSuccess(true);
         setResetMessage(response.data?.message || 'Password reset instructions sent to your email');
       } catch (err) {
-        // Handle network errors
-        if (isNetworkError(err)) {
-          setResetSuccess(false);
-          setResetMessage('Network error. Please check your internet connection and try again.');
-          return;
-        }
+        // Handle errors
+        setResetSuccess(false);
+        setResetMessage(err.response?.data?.message || 'Failed to send reset request. Please try again.');
         
         const msg = err.response?.data?.message || '';
         if (msg.includes('Workers must request reset')) {
@@ -71,12 +62,9 @@ function Login() {
             setResetSuccess(true);
             setResetMessage(resp2.data?.message || 'Password reset request sent to manager');
           } catch (workerErr) {
-            // Handle network errors for worker request
-            if (isNetworkError(workerErr)) {
-              setResetSuccess(false);
-              setResetMessage('Network error. Please check your internet connection and try again.');
-              return;
-            }
+            // Handle errors for worker request
+            setResetSuccess(false);
+            setResetMessage(workerErr.response?.data?.message || 'Failed to send worker reset request. Please try again.');
             setResetSuccess(false);
             setResetMessage(workerErr.response?.data?.message || 'Failed to send worker reset request');
             return;
@@ -92,12 +80,8 @@ function Login() {
         setResetSuccess(false);
       }, 3000);
     } catch (error) {
-      // Handle network errors in the outer catch
-      if (isNetworkError(error)) {
-        setResetSuccess(false);
-        setResetMessage('Network error. Please check your internet connection and try again.');
-        return;
-      }
+      // Handle errors in the outer catch
+      setResetSuccess(false);
       setResetSuccess(false);
       setResetMessage(error.response?.data?.message || 'Failed to send reset email');
     }
@@ -109,11 +93,11 @@ function Login() {
       display: 'flex', 
       alignItems: 'center', 
       justifyContent: 'center',
-      bgcolor: '#f5f5f5' 
+      px: 2
     }}>
-      <Card sx={{ maxWidth: 400, width: '100%', mx: 2 }}>
+      <Card sx={{ maxWidth: 420, width: '100%', mx: 2, backdropFilter: 'blur(6px)' }}>
         <CardContent>
-          <Typography variant="h4" align="center" sx={{ mb: 3 }}>
+          <Typography variant="h4" align="center" sx={{ mb: 3, fontWeight: 800 }}>
             Sri Balaji HDPE Pipes
           </Typography>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Box, Grid, Card, CardContent, Typography, Chip, Avatar, List, ListItem, ListItemText, ListItemAvatar } from '@mui/material';
 import { TrendingUp, TrendingDown, Person, Inventory, AttachMoney, Speed, Grade, Schedule } from '@mui/icons-material';
 import Navbar from '../layout/Navbar';
-import api, { checkConnection } from '../../utils/api';
+import api from '../../utils/api';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RechartsTooltip, CartesianGrid, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
 function Dashboard() {
@@ -72,28 +72,12 @@ function Dashboard() {
       
       setData(dashboardData);
       
-      // Store the last known dashboard data for offline use
-      localStorage.setItem('last_dashboard_data', JSON.stringify(dashboardData));
-      
-      // If we got data and were in offline mode, try to reconnect
-      if (localStorage.getItem('offline_mode')) {
-        checkConnection();
-      }
+      // Dashboard data fetched successfully
     } catch (error) {
       console.error('Error fetching stats:', error);
       
-      // If we're offline, use cached data
-      if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-        const lastKnownData = localStorage.getItem('last_dashboard_data');
-        if (lastKnownData) {
-          try {
-            setData(JSON.parse(lastKnownData));
-            console.log('Using cached dashboard data');
-          } catch (e) {
-            console.error('Error parsing cached dashboard data:', e);
-          }
-        }
-      }
+      // Error handling without offline functionality
+      console.error('Error fetching stats:', error);
     } finally {
       setIsLoading(false);
     }
@@ -106,24 +90,12 @@ function Dashboard() {
       
       setProductionStatus(productionData);
       
-      // Store the last known production status for offline use
-      localStorage.setItem('last_production_status', JSON.stringify(productionData));
+      // Production status fetched successfully
       
     } catch (error) {
       console.error('Error fetching production status:', error);
       
-      // If we're offline, use cached data
-      if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
-        const lastKnownStatus = localStorage.getItem('last_production_status');
-        if (lastKnownStatus) {
-          try {
-            setProductionStatus(JSON.parse(lastKnownStatus));
-            console.log('Using cached production status data');
-          } catch (e) {
-            console.error('Error parsing cached production status data:', e);
-          }
-        }
-      }
+      // Error handling without offline functionality
     }
   };
 

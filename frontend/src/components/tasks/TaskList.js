@@ -1,11 +1,33 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Container, Row, Col, Card, Table, Badge, Button, Form, Spinner } from 'react-bootstrap';
-import { PlusLg, Pencil, Trash } from 'react-bootstrap-icons';
+import { 
+  Box, 
+  Button, 
+  Typography, 
+  Card, 
+  CardContent, 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableContainer, 
+  TableHead, 
+  TableRow, 
+  Paper, 
+  Chip, 
+  CircularProgress, 
+  Alert, 
+  FormControl, 
+  InputLabel, 
+  Select, 
+  MenuItem, 
+  IconButton,
+  Tooltip,
+  Grid
+} from '@mui/material';
+import { Add, Edit, Delete, ArrowBack } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import TaskModal from './TaskModal';
 import api from '../../utils/api';
-import { isNetworkError } from '../../utils/offlineUtils';
-import './TaskList.css';
+import Navbar from '../layout/Navbar';
 
 const TaskList = () => {
     const [tasks, setTasks] = useState([]);
@@ -27,27 +49,22 @@ const TaskList = () => {
             if (filters.status) params.status = filters.status;
             if (filters.priority) params.priority = filters.priority;
             
-            const { data } = await api.get('/api/tasks', { params });
-            setTasks(data);
-            setError(null);
+            const { data } = await api.get('/tasks', { params });
+            setTasks(data || []);
+            setError('');
         } catch (err) {
-            if (isNetworkError(err)) {
-                setError('Network error: Unable to connect to the server. Please check your internet connection and try again.');
-            } else {
-                setError('Failed to fetch tasks.');
-            }
+            setError('Failed to fetch tasks. Please check your internet connection and try again.');
             console.error('Error fetching tasks:', err);
         } finally {
             setLoading(false);
         }
-    }, [api]);
+    }, [filters]);
 
     // Handle filter changes
-    const handleFilterChange = (e) => {
-        const { name, value } = e.target;
+    const handleFilterChange = (field, value) => {
         setFilters(prev => ({
             ...prev,
-            [name]: value
+            [field]: value
         }));
     };
 
@@ -62,20 +79,17 @@ const TaskList = () => {
         try {
             if (currentTask) {
                 // Update existing task
-                await api.put(`/api/tasks/${currentTask._id}`, taskData);
+                await api.put(`/tasks/${currentTask._id}`, taskData);
             } else {
                 // Create new task
-                await api.post('/api/tasks', taskData);
+                await api.post('/tasks', taskData);
             }
             setShowModal(false);
+            setCurrentTask(null);
             fetchTasks(); // Refresh task list
         } catch (err) {
             console.error('Error saving task:', err);
-            if (isNetworkError(err)) {
-                alert('Network error: Unable to connect to the server. Please check your internet connection and try again.');
-            } else {
-                alert('Failed to save task. Please try again.');  
-            }
+            setError('Failed to save task. Please check your internet connection and try again.');
         }
     };
 
@@ -84,15 +98,11 @@ const TaskList = () => {
         if (!window.confirm('Are you sure you want to delete this task?')) return;
         
         try {
-            await api.delete(`/api/tasks/${taskId}`);
+            await api.delete(`/tasks/${taskId}`);
             fetchTasks(); // Refresh task list
         } catch (err) {
             console.error('Error deleting task:', err);
-            if (isNetworkError(err)) {
-                alert('Network error: Unable to connect to the server. Please check your internet connection and try again.');
-            } else {
-                alert('Failed to delete task. Please try again.');
-            }
+            setError('Failed to delete task. Please check your internet connection and try again.');
         }
     };
 
@@ -101,23 +111,23 @@ const TaskList = () => {
         navigate(`/tasks/${taskId}`);
     };
 
-    // Get status badge variant
-    const getStatusBadge = (status) => {
+    // Get status chip color
+    const getStatusColor = (status) => {
         switch (status) {
             case 'completed': return 'success';
             case 'in_progress': return 'primary';
             case 'pending': return 'warning';
-            default: return 'secondary';
+            default: return 'default';
         }
     };
 
-    // Get priority badge variant
-    const getPriorityBadge = (priority) => {
+    // Get priority chip color
+    const getPriorityColor = (priority) => {
         switch (priority) {
-            case 'high': return 'danger';
+            case 'high': return 'error';
             case 'medium': return 'warning';
             case 'low': return 'success';
-            default: return 'secondary';
+            default: return 'default';
         }
     };
 
@@ -131,148 +141,195 @@ const TaskList = () => {
     // Load tasks on mount and when filters change
     useEffect(() => {
         fetchTasks();
-    }, [filters]);
+    }, [fetchTasks]);
 
     return (
-        <Container fluid className="task-list-container">
-            <Row className="mb-4">
-                <Col>
-                    <Card>
-                        <Card.Header className="d-flex justify-content-between align-items-center">
-                            <h5 className="mb-0">Task Management</h5>
-                            <Button 
-                                variant="primary" 
-                                size="sm" 
-                                onClick={() => openTaskModal()}
-                            >
-                                <PlusLg className="me-1" /> New Task
-                            </Button>
-                        </Card.Header>
-                        <Card.Body>
-                            <Row className="mb-3">
-                                <Col md={6} lg={3}>
-                                    <Form.Group>
-                                        <Form.Label>Status</Form.Label>
-                                        <Form.Select 
-                                            name="status" 
-                                            value={filters.status} 
-                                            onChange={handleFilterChange}
-                                        >
-                                            <option value="">All Statuses</option>
-                                            <option value="pending">Pending</option>
-                                            <option value="in_progress">In Progress</option>
-                                            <option value="completed">Completed</option>
-                                        </Form.Select>
-                                    </Form.Group>
-                                </Col>
-                                <Col md={6} lg={3}>
-                                    <Form.Group>
-                                        <Form.Label>Priority</Form.Label>
-                                        <Form.Select 
-                                            name="priority" 
-                                            value={filters.priority} 
-                                            onChange={handleFilterChange}
-                                        >
-                                            <option value="">All Priorities</option>
-                                            <option value="high">High</option>
-                                            <option value="medium">Medium</option>
-                                            <option value="low">Low</option>
-                                        </Form.Select>
-                                    </Form.Group>
-                                </Col>
-                            </Row>
-                            
-                            {loading ? (
-                                <div className="text-center p-5">
-                                    <Spinner animation="border" />
-                                </div>
-                            ) : error ? (
-                                <div className="text-center p-3 text-danger">{error}</div>
-                            ) : tasks.length === 0 ? (
-                                <div className="text-center p-5">
-                                    <p>No tasks found. Create a new task to get started.</p>
-                                    <Button 
-                                        variant="primary" 
-                                        onClick={() => openTaskModal()}
+        <Box>
+            <Navbar />
+            <Box sx={{ p: 3, maxWidth: 1400, mx: 'auto' }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                    <Typography variant="h4" sx={{ fontWeight: 600 }}>
+                        Task Management
+                    </Typography>
+                    <Button 
+                        variant="contained" 
+                        startIcon={<Add />}
+                        onClick={() => openTaskModal()}
+                        sx={{ minWidth: 140 }}
+                    >
+                        New Task
+                    </Button>
+                </Box>
+
+                {error && (
+                    <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError('')}>
+                        {error}
+                    </Alert>
+                )}
+
+                <Card sx={{ mb: 3, boxShadow: 3 }}>
+                    <CardContent>
+                        <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+                            Filters
+                        </Typography>
+                        <Grid container spacing={2}>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth size="small">
+                                    <InputLabel>Status</InputLabel>
+                                    <Select
+                                        value={filters.status}
+                                        label="Status"
+                                        onChange={(e) => handleFilterChange('status', e.target.value)}
                                     >
-                                        <PlusLg className="me-1" /> Create Task
-                                    </Button>
-                                </div>
-                            ) : (
-                                <div className="table-responsive">
-                                    <Table hover className="task-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Title</th>
-                                                <th>Assigned To</th>
-                                                <th>Status</th>
-                                                <th>Priority</th>
-                                                <th>Due Date</th>
-                                                <th>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {tasks.map(task => (
-                                                <tr 
-                                                    key={task._id} 
-                                                    className={!task.read ? 'unread-task' : ''}
-                                                    onClick={() => handleTaskClick(task._id)}
-                                                >
-                                                    <td>{task.title}</td>
-                                                    <td>{task.assignedTo?.name || 'N/A'}</td>
-                                                    <td>
-                                                        <Badge bg={getStatusBadge(task.status)}>
-                                                            {task.status.charAt(0).toUpperCase() + task.status.slice(1)}
-                                                        </Badge>
-                                                    </td>
-                                                    <td>
-                                                        <Badge bg={getPriorityBadge(task.priority)}>
-                                                            {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                                                        </Badge>
-                                                    </td>
-                                                    <td>{formatDate(task.dueDate)}</td>
-                                                    <td onClick={(e) => e.stopPropagation()}>
-                                                        <Button 
-                                                            variant="outline-primary" 
-                                                            size="sm" 
-                                                            className="me-2"
+                                        <MenuItem value="">All Statuses</MenuItem>
+                                        <MenuItem value="pending">Pending</MenuItem>
+                                        <MenuItem value="in_progress">In Progress</MenuItem>
+                                        <MenuItem value="completed">Completed</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            <Grid item xs={12} sm={6} md={3}>
+                                <FormControl fullWidth size="small">
+                                    <InputLabel>Priority</InputLabel>
+                                    <Select
+                                        value={filters.priority}
+                                        label="Priority"
+                                        onChange={(e) => handleFilterChange('priority', e.target.value)}
+                                    >
+                                        <MenuItem value="">All Priorities</MenuItem>
+                                        <MenuItem value="high">High</MenuItem>
+                                        <MenuItem value="medium">Medium</MenuItem>
+                                        <MenuItem value="low">Low</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                        </Grid>
+                    </CardContent>
+                </Card>
+
+                <Card sx={{ boxShadow: 3 }}>
+                    <CardContent>
+                        {loading ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 300 }}>
+                                <CircularProgress />
+                            </Box>
+                        ) : error && tasks.length === 0 ? (
+                            <Box sx={{ textAlign: 'center', py: 5 }}>
+                                <Alert severity="error" sx={{ mb: 2 }}>
+                                    {error}
+                                </Alert>
+                                <Button variant="contained" onClick={fetchTasks}>
+                                    Retry
+                                </Button>
+                            </Box>
+                        ) : tasks.length === 0 ? (
+                            <Box sx={{ textAlign: 'center', py: 5 }}>
+                                <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+                                    No tasks found
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                                    Create a new task to get started.
+                                </Typography>
+                                <Button 
+                                    variant="contained" 
+                                    startIcon={<Add />}
+                                    onClick={() => openTaskModal()}
+                                >
+                                    Create Task
+                                </Button>
+                            </Box>
+                        ) : (
+                            <TableContainer component={Paper} variant="outlined">
+                                <Table>
+                                    <TableHead>
+                                        <TableRow sx={{ bgcolor: 'primary.main' }}>
+                                            <TableCell sx={{ color: 'white', fontWeight: 600 }}>Title</TableCell>
+                                            <TableCell sx={{ color: 'white', fontWeight: 600 }}>Assigned To</TableCell>
+                                            <TableCell sx={{ color: 'white', fontWeight: 600 }}>Status</TableCell>
+                                            <TableCell sx={{ color: 'white', fontWeight: 600 }}>Priority</TableCell>
+                                            <TableCell sx={{ color: 'white', fontWeight: 600 }}>Due Date</TableCell>
+                                            <TableCell sx={{ color: 'white', fontWeight: 600 }} align="center">Actions</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {tasks.map(task => (
+                                            <TableRow 
+                                                key={task._id} 
+                                                onClick={() => handleTaskClick(task._id)}
+                                                sx={{ 
+                                                    cursor: 'pointer',
+                                                    '&:hover': { bgcolor: 'action.hover' },
+                                                    ...(!task.read && { bgcolor: 'action.selected' })
+                                                }}
+                                            >
+                                                <TableCell>
+                                                    <Typography variant="body1" sx={{ fontWeight: task.read ? 'normal' : 600 }}>
+                                                        {task.title}
+                                                    </Typography>
+                                                </TableCell>
+                                                <TableCell>{task.assignedTo?.name || 'N/A'}</TableCell>
+                                                <TableCell>
+                                                    <Chip 
+                                                        label={task.status.charAt(0).toUpperCase() + task.status.slice(1).replace('_', ' ')} 
+                                                        color={getStatusColor(task.status)}
+                                                        size="small"
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Chip 
+                                                        label={task.priority.charAt(0).toUpperCase() + task.priority.slice(1)} 
+                                                        color={getPriorityColor(task.priority)}
+                                                        size="small"
+                                                    />
+                                                </TableCell>
+                                                <TableCell>{formatDate(task.dueDate)}</TableCell>
+                                                <TableCell align="center" onClick={(e) => e.stopPropagation()}>
+                                                    <Tooltip title="Edit">
+                                                        <IconButton 
+                                                            size="small" 
+                                                            color="primary"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 openTaskModal(task);
                                                             }}
                                                         >
-                                                            <Pencil />
-                                                        </Button>
-                                                        <Button 
-                                                            variant="outline-danger" 
-                                                            size="sm"
+                                                            <Edit />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                    <Tooltip title="Delete">
+                                                        <IconButton 
+                                                            size="small" 
+                                                            color="error"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 handleDeleteTask(task._id);
                                                             }}
                                                         >
-                                                            <Trash />
-                                                        </Button>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </Table>
-                                </div>
-                            )}
-                        </Card.Body>
-                    </Card>
-                </Col>
-            </Row>
+                                                            <Delete />
+                                                        </IconButton>
+                                                    </Tooltip>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                        )}
+                    </CardContent>
+                </Card>
 
-            {/* Task Create/Edit Modal */}
-            <TaskModal 
-                show={showModal}
-                onHide={() => setShowModal(false)}
-                onSave={handleTaskSave}
-                task={currentTask}
-            />
-        </Container>
+                {/* Task Create/Edit Modal */}
+                <TaskModal 
+                    open={showModal}
+                    onClose={() => {
+                        setShowModal(false);
+                        setCurrentTask(null);
+                    }}
+                    onSave={handleTaskSave}
+                    task={currentTask}
+                />
+            </Box>
+        </Box>
     );
 };
 

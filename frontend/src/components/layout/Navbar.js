@@ -1,8 +1,13 @@
-import { AppBar, Toolbar, Typography, Button, Box, IconButton, Menu, MenuItem } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Box, IconButton, Menu, MenuItem, Tooltip, Avatar, Divider } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
+import Brightness4Icon from '@mui/icons-material/Brightness4';
+import Brightness7Icon from '@mui/icons-material/Brightness7';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext, useMemo } from 'react';
+import { useTheme } from '@mui/material/styles';
 import NotificationCenter from '../notifications/NotificationCenter';
+import { ColorModeContext } from '../../theme';
+import OnlineStatus from './OnlineStatus';
 
 function Navbar() {
   const navigate = useNavigate();
@@ -11,13 +16,16 @@ function Navbar() {
   const [role, setRole] = useState('worker');
   const [menuEl, setMenuEl] = useState(null);
   const menuOpen = Boolean(menuEl);
+  const theme = useTheme();
+  const colorMode = useContext(ColorModeContext);
+  const [online, setOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token && location.pathname !== '/') {
       navigate('/');
     }
-    
+
     try {
       const userData = JSON.parse(localStorage.getItem('user') || '{}');
       setUserName(userData.name || 'User');
@@ -25,8 +33,21 @@ function Navbar() {
     } catch (error) {
       console.error('Error parsing user data:', error);
       setUserName('User');
+      setRole('worker');
     }
   }, [navigate, location]);
+
+  // Online/offline indicator
+  useEffect(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    return () => {
+      window.removeEventListener('online', on);
+      window.removeEventListener('offline', off);
+    };
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -37,154 +58,148 @@ function Navbar() {
   const openMenu = (e) => setMenuEl(e.currentTarget);
   const closeMenu = () => setMenuEl(null);
 
+  // Build link sets just once per role
+  const links = useMemo(() => {
+    const base = [
+      { label: 'Pipes', path: '/pipes' },
+      { label: 'Tasks', path: '/tasks' },
+      { label: 'Sales', path: '/sales' },
+    ];
+    const managerOnly = [
+      { label: 'Import Excel', path: '/pipes/import-excel' },
+      { label: 'Mail', path: '/mail' },
+      { label: 'Workers', path: '/workers' },
+      { label: 'Pricing', path: '/pricing' },
+    ];
+    return role === 'manager' ? [...base, ...managerOnly] : base;
+  }, [role]);
+
+  const isActive = (path) => location.pathname.startsWith(path);
+
   // Don't show navbar on login page
   if (location.pathname === '/') {
     return null;
   }
 
+  const userInitials = (userName || 'U')
+    .split(' ')
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
   return (
-    <AppBar position="static">
-      <Toolbar>
-        <Typography 
-          variant="h6" 
-          component="div" 
-          sx={{ flexGrow: 1, cursor: 'pointer' }} 
+    <AppBar position="sticky" elevation={0} color="default" sx={{ zIndex: (t) => t.zIndex.drawer + 1 }}>
+      <Toolbar sx={{ gap: 1 }}>
+        <Typography
+          variant="h6"
+          component="div"
+          sx={{ 
+            flexGrow: 1, 
+            cursor: 'pointer', 
+            whiteSpace: 'nowrap', 
+            fontWeight: 800, 
+            color: 'text.primary',
+            fontSize: { xs: '1rem', sm: '1.25rem' },
+            '&:hover': {
+              opacity: 0.8
+            }
+          }}
           onClick={() => {
-            // Redirect to appropriate dashboard based on user role
             const userData = JSON.parse(localStorage.getItem('user') || '{}');
             const userRole = userData.role || 'worker';
-            navigate(userRole === 'manager' ? '/dashboard' : '/worker-dashboard');
+            
+            if (userRole === 'manager') {
+              navigate('/dashboard');
+            } else {
+              navigate('/worker-dashboard');
+            }
           }}
+          aria-label="Go to dashboard"
         >
           Sri Balaji HDPE Pipes
         </Typography>
+
         {/* Desktop actions */}
-        <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 2, alignItems: 'center' }}>
-          {role === 'manager' && (
-            <Button 
-              color="inherit" 
-              onClick={() => navigate('/dashboard')}
-              sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
+        <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 0.5, alignItems: 'center' }}>
+          {links.map((l) => (
+            <Button
+              key={l.path}
+              color="inherit"
+              onClick={() => navigate(l.path)}
+              sx={{
+                px: 1.5,
+                borderRadius: 2,
+                ...(isActive(l.path) && { bgcolor: 'action.selected', fontWeight: 700 }),
+              }}
             >
-              Dashboard
+              {l.label}
             </Button>
-          )}
-          <Button 
-            color="inherit" 
-            onClick={() => navigate('/worker-dashboard')}
-            sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
-          >
-            My Performance
-          </Button>
-          {role === 'manager' && (
-            <Button 
-              color="inherit" 
-              onClick={() => navigate('/dashboard')}
-              sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
-            >
-              SBPI Management
-            </Button>
-          )}
-          <Button 
-            color="inherit" 
-            onClick={() => navigate('/pipes')}
-            sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
-          >
-            Pipes
-          </Button>
-          {role === 'manager' && (
-            <Button 
-              color="inherit" 
-              onClick={() => navigate('/pipes/import-excel')}
-              sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
-            >
-              Import Excel
-            </Button>
-          )}
-          {role === 'manager' && (
-            <Button 
-              color="inherit" 
-              onClick={() => navigate('/workers')}
-              sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
-            >
-              Workers
-            </Button>
-          )}
-          {role === 'manager' && (
-            <Button 
-              color="inherit" 
-              onClick={() => navigate('/pricing')}
-              sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
-            >
-              Pricing
-            </Button>
-          )}
-          <Button 
-            color="inherit" 
-            onClick={() => navigate('/sales')}
-            sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
-          >
-            Sales
-          </Button>
-          <Button 
-            color="inherit" 
-            onClick={() => navigate('/tasks')}
-            sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
-          >
-            Tasks
-          </Button>
-          {role === 'manager' && (
-            <Button 
-              color="inherit" 
-              onClick={() => navigate('/mail')}
-              sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}
-            >
-              Mail
-            </Button>
-          )}
+          ))}
+
+          <OnlineStatus online={online} />
+
+          <Tooltip title={theme.palette.mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}>
+            <IconButton color="inherit" onClick={colorMode.toggleColorMode} aria-label="toggle theme">
+              {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+            </IconButton>
+          </Tooltip>
+
           <NotificationCenter />
-          <Typography sx={{ mx: 2 }}>
-            {userName}
-          </Typography>
-          <Button 
-            color="inherit" 
-            onClick={handleLogout}
-            sx={{ 
-              '&:hover': { 
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                color: '#ff4444'
-              }
-            }}
-          >
-            Logout
-          </Button>
+
+          <Tooltip title={userName}>
+            <IconButton color="inherit" onClick={openMenu} aria-label="account menu" sx={{ ml: 0.5 }}>
+              <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
+                {userInitials}
+              </Avatar>
+            </IconButton>
+          </Tooltip>
+
+          <Menu anchorEl={menuEl} open={menuOpen} onClose={closeMenu} keepMounted>
+            {role === 'manager' ? (
+              <MenuItem onClick={() => { navigate('/dashboard'); closeMenu(); }}>Manager Dashboard</MenuItem>
+            ) : (
+              <MenuItem onClick={() => { navigate('/worker-dashboard'); closeMenu(); }}>My Performance</MenuItem>
+            )}
+            <Divider />
+            {role === 'manager' && (
+              <MenuItem onClick={() => { navigate('/workers'); closeMenu(); }}>Workers</MenuItem>
+            )}
+            {role === 'manager' && (
+              <MenuItem onClick={() => { navigate('/pricing'); closeMenu(); }}>Pricing</MenuItem>
+            )}
+            <MenuItem onClick={() => { navigate('/pipes'); closeMenu(); }}>Inventory</MenuItem>
+            <MenuItem onClick={() => { navigate('/tasks'); closeMenu(); }}>Tasks</MenuItem>
+            <MenuItem onClick={() => { navigate('/sales'); closeMenu(); }}>Sales</MenuItem>
+            <Divider />
+            <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>Logout</MenuItem>
+          </Menu>
         </Box>
 
         {/* Mobile menu */}
         <Box sx={{ display: { xs: 'flex', md: 'none' }, alignItems: 'center', gap: 1 }}>
-          <Typography sx={{ mr: 1 }}>{userName}</Typography>
-          <IconButton color="inherit" onClick={openMenu} aria-label="menu">
+          <OnlineStatus online={online} />
+          <Tooltip title={theme.palette.mode === 'dark' ? 'Light' : 'Dark'}>
+            <IconButton color="inherit" onClick={colorMode.toggleColorMode} aria-label="toggle theme">
+              {theme.palette.mode === 'dark' ? <Brightness7Icon /> : <Brightness4Icon />}
+            </IconButton>
+          </Tooltip>
+          <NotificationCenter />
+          <IconButton color="inherit" onClick={openMenu} aria-label="open menu">
             <MenuIcon />
           </IconButton>
-          <Menu anchorEl={menuEl} open={menuOpen} onClose={closeMenu}>
-            <MenuItem onClick={() => { navigate('/worker-dashboard'); closeMenu(); }}>My Performance</MenuItem>
-            <MenuItem onClick={() => { navigate('/pipes'); closeMenu(); }}>Pipes</MenuItem>
-            {role === 'manager' && (
-              <MenuItem onClick={() => { navigate('/pipes/import-excel'); closeMenu(); }}>Import Excel</MenuItem>
+          <Menu anchorEl={menuEl} open={menuOpen} onClose={closeMenu} keepMounted>
+            {links.map((l) => (
+              <MenuItem key={l.path} onClick={() => { navigate(l.path); closeMenu(); }}>{l.label}</MenuItem>
+            ))}
+            <Divider />
+            {role === 'manager' ? (
+              <MenuItem onClick={() => { navigate('/dashboard'); closeMenu(); }}>Manager Dashboard</MenuItem>
+            ) : (
+              <MenuItem onClick={() => { navigate('/worker-dashboard'); closeMenu(); }}>My Performance</MenuItem>
             )}
-            <MenuItem onClick={() => { navigate('/sales'); closeMenu(); }}>Sales</MenuItem>
-            <MenuItem onClick={() => { navigate('/tasks'); closeMenu(); }}>Tasks</MenuItem>
-            {role === 'manager' && (
-              <MenuItem onClick={() => { navigate('/mail'); closeMenu(); }}>Mail</MenuItem>
-            )}
-            {role === 'manager' && (
-              <>
-                <MenuItem onClick={() => { navigate('/dashboard'); closeMenu(); }}>Dashboard</MenuItem>
-                <MenuItem onClick={() => { navigate('/workers'); closeMenu(); }}>Workers</MenuItem>
-                <MenuItem onClick={() => { navigate('/pricing'); closeMenu(); }}>Pricing</MenuItem>
-              </>
-            )}
-            <MenuItem onClick={() => { handleLogout(); closeMenu(); }}>Logout</MenuItem>
+            <Divider />
+            <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>Logout</MenuItem>
           </Menu>
         </Box>
       </Toolbar>

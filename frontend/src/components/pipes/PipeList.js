@@ -16,12 +16,31 @@ import {
   Pagination,
   Tooltip,
   Chip,
-  Avatar
+  Avatar,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  CircularProgress,
+  Alert,
+  InputAdornment,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Collapse,
+  IconButton
 } from '@mui/material';
-import { Add, Edit, Delete, Search, Clear, GetApp } from '@mui/icons-material';
+import { Add, Edit as EditIcon, Delete as DeleteIcon, Search, Clear, GetApp } from '@mui/icons-material';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ViewIcon from '@mui/icons-material/Visibility';
+import api from '../../utils/api';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../layout/Navbar';
-import api from '../../utils/api';
 
 function PipeList() {
   const [pipes, setPipes] = useState([]);
@@ -46,17 +65,6 @@ function PipeList() {
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchPipes();
-  }, [fetchPipes]);
-
-  useEffect(() => {
-    // Only run when pipes is properly initialized
-    if (Array.isArray(pipes)) {
-      applyFiltersAndSearch();
-    }
-  }, [pipes, searchTerm, filters, sortBy, sortOrder, applyFiltersAndSearch]);
-
   const fetchPipes = useCallback(async () => {
     try {
       setLoading(true);
@@ -78,7 +86,11 @@ function PipeList() {
     } finally {
       setLoading(false);
     }
-  }, [api]);
+  }, []);
+
+  useEffect(() => {
+    fetchPipes();
+  }, [fetchPipes]);
 
   const calculateStats = (pipeData) => {
     if (!Array.isArray(pipeData) || !pipeData.length) return {};
@@ -164,7 +176,14 @@ function PipeList() {
       }
     });
     setFilteredPipes(tempPipes);
-  }, [pipes, filters, searchTerm, sortBy, sortOrder, setFilteredPipes]);
+  }, [pipes, filters, searchTerm, sortBy, sortOrder]);
+
+  useEffect(() => {
+    // Only run when pipes is properly initialized
+    if (Array.isArray(pipes)) {
+      applyFiltersAndSearch();
+    }
+  }, [pipes, searchTerm, filters, sortBy, sortOrder, applyFiltersAndSearch]);
 
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({ ...prev, [field]: value }));

@@ -1,9 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
+import {
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
+    Button,
+    TextField,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
+    Grid,
+    CircularProgress,
+    Box
+} from '@mui/material';
 import api from '../../utils/api';
-import { isNetworkError } from '../../utils/offlineUtils';
 
-const TaskModal = ({ show, onHide, onSave, task }) => {
+const TaskModal = ({ open, onClose, onSave, task }) => {
     const [users, setUsers] = useState([]);
     const [formData, setFormData] = useState({
         title: '',
@@ -13,27 +26,24 @@ const TaskModal = ({ show, onHide, onSave, task }) => {
         dueDate: '',
         status: 'pending'
     });
-    const [validated, setValidated] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [errors, setErrors] = useState({});
 
     // Load users for assignment dropdown
     useEffect(() => {
         const fetchUsers = async () => {
             try {
-                const { data } = await api.get('/api/workers');
-                setUsers(data);
+                const { data } = await api.get('/workers');
+                setUsers(data || []);
             } catch (error) {
                 console.error('Error fetching users:', error);
-                if (isNetworkError(error)) {
-                    console.warn('Network error while fetching users. Working in offline mode.');
-                }
             }
         };
 
-        if (show) {
+        if (open) {
             fetchUsers();
         }
-    }, [show]);
+    }, [open]);
 
     // Set form data when task changes
     useEffect(() => {
@@ -57,8 +67,8 @@ const TaskModal = ({ show, onHide, onSave, task }) => {
                 status: 'pending'
             });
         }
-        setValidated(false);
-    }, [task, show]);
+        setErrors({});
+    }, [task, open]);
 
     // Handle form input changes
     const handleChange = (e) => {
@@ -67,156 +77,183 @@ const TaskModal = ({ show, onHide, onSave, task }) => {
             ...prev,
             [name]: value
         }));
+        // Clear error for this field
+        if (errors[name]) {
+            setErrors(prev => ({
+                ...prev,
+                [name]: ''
+            }));
+        }
+    };
+
+    // Validate form
+    const validate = () => {
+        const newErrors = {};
+        if (!formData.title.trim()) {
+            newErrors.title = 'Title is required';
+        }
+        if (!formData.description.trim()) {
+            newErrors.description = 'Description is required';
+        }
+        if (!formData.assignedTo) {
+            newErrors.assignedTo = 'Please assign this task to a user';
+        }
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
     };
 
     // Handle form submission
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        const form = e.currentTarget;
         
-        if (form.checkValidity() === false) {
-            e.stopPropagation();
-            setValidated(true);
+        if (!validate()) {
             return;
         }
         
         setLoading(true);
-        onSave(formData);
-        setLoading(false);
+        try {
+            await onSave(formData);
+            onClose();
+        } catch (error) {
+            console.error('Error saving task:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <Modal
-            show={show}
-            onHide={onHide}
-            backdrop="static"
-            keyboard={false}
-            size="lg"
-            aria-modal="true"
+        <Dialog
+            open={open}
+            onClose={onClose}
+            maxWidth="md"
+            fullWidth
+            PaperProps={{
+                component: 'form',
+                onSubmit: handleSubmit
+            }}
         >
-            <Form noValidate validated={validated} onSubmit={handleSubmit}>
-                <Modal.Header closeButton>
-                    <Modal.Title>{task ? 'Edit Task' : 'Create New Task'}</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>
-                    <Row className="mb-3">
-                        <Col>
-                            <Form.Group controlId="taskTitle">
-                                <Form.Label>Title</Form.Label>
-                                <Form.Control
-                                    type="text"
-                                    name="title"
-                                    value={formData.title}
-                                    onChange={handleChange}
-                                    required
-                                    placeholder="Enter task title"
-                                />
-                                <Form.Control.Feedback type="invalid">
-                                    Please provide a task title.
-                                </Form.Control.Feedback>
-                            </Form.Group>
-                        </Col>
-                    </Row>
+            <DialogTitle sx={{ fontWeight: 600 }}>
+                {task ? 'Edit Task' : 'Create New Task'}
+            </DialogTitle>
+            <DialogContent>
+                <Grid container spacing={2} sx={{ mt: 1 }}>
+                    <Grid item xs={12}>
+                        <TextField
+                            fullWidth
+                            label="Title"
+                            name="title"
+                            value={formData.title}
+                            onChange={handleChange}
+                            required
+                            error={!!errors.title}
+                            helperText={errors.title}
+                            placeholder="Enter task title"
+                        />
+                    </Grid>
 
-                    <Row className="mb-3">
-                        <Col>
-                            <Form.Group controlId="taskDescription">
-                                <Form.Label>Description</Form.Label>
-                                <Form.Control
-                                    as="textarea"
-                                    rows={3}
-                                    name="description"
-                                    value={formData.description}
-                                    onChange={handleChange}
-                                    required
-                                    placeholder="Enter task description"
-                                />
-                                <Form.Control.Feedback type="invalid">
-                                    Please provide a task description.
-                                </Form.Control.Feedback>
-                            </Form.Group>
-                        </Col>
-                    </Row>
+                    <Grid item xs={12}>
+                        <TextField
+                            fullWidth
+                            label="Description"
+                            name="description"
+                            value={formData.description}
+                            onChange={handleChange}
+                            required
+                            multiline
+                            rows={4}
+                            error={!!errors.description}
+                            helperText={errors.description}
+                            placeholder="Enter task description"
+                        />
+                    </Grid>
 
-                    <Row className="mb-3">
-                        <Col md={6}>
-                            <Form.Group controlId="taskPriority">
-                                <Form.Label>Priority</Form.Label>
-                                <Form.Select
-                                    name="priority"
-                                    value={formData.priority}
+                    <Grid item xs={12} sm={6}>
+                        <FormControl fullWidth required>
+                            <InputLabel>Priority</InputLabel>
+                            <Select
+                                name="priority"
+                                value={formData.priority}
+                                label="Priority"
+                                onChange={handleChange}
+                            >
+                                <MenuItem value="low">Low</MenuItem>
+                                <MenuItem value="medium">Medium</MenuItem>
+                                <MenuItem value="high">High</MenuItem>
+                            </Select>
+                        </FormControl>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6}>
+                        <FormControl fullWidth required error={!!errors.assignedTo}>
+                            <InputLabel>Assign To</InputLabel>
+                            <Select
+                                name="assignedTo"
+                                value={formData.assignedTo}
+                                label="Assign To"
+                                onChange={handleChange}
+                            >
+                                <MenuItem value="">
+                                    <em>Select User</em>
+                                </MenuItem>
+                                {users.map(user => (
+                                    <MenuItem key={user._id} value={user._id}>
+                                        {user.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                            {errors.assignedTo && (
+                                <Box sx={{ color: 'error.main', fontSize: '0.75rem', mt: 0.5, ml: 1.75 }}>
+                                    {errors.assignedTo}
+                                </Box>
+                            )}
+                        </FormControl>
+                    </Grid>
+
+                    <Grid item xs={12} sm={6}>
+                        <TextField
+                            fullWidth
+                            label="Due Date"
+                            name="dueDate"
+                            type="date"
+                            value={formData.dueDate}
+                            onChange={handleChange}
+                            InputLabelProps={{ shrink: true }}
+                        />
+                    </Grid>
+
+                    {task && (
+                        <Grid item xs={12} sm={6}>
+                            <FormControl fullWidth>
+                                <InputLabel>Status</InputLabel>
+                                <Select
+                                    name="status"
+                                    value={formData.status}
+                                    label="Status"
                                     onChange={handleChange}
-                                    required
                                 >
-                                    <option value="low">Low</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="high">High</option>
-                                </Form.Select>
-                            </Form.Group>
-                        </Col>
-                        <Col md={6}>
-                            <Form.Group controlId="taskAssignedTo">
-                                <Form.Label>Assign To</Form.Label>
-                                <Form.Select
-                                    name="assignedTo"
-                                    value={formData.assignedTo}
-                                    onChange={handleChange}
-                                    required
-                                >
-                                    <option value="">Select User</option>
-                                    {users.map(user => (
-                                        <option key={user._id} value={user._id}>
-                                            {user.name}
-                                        </option>
-                                    ))}
-                                </Form.Select>
-                                <Form.Control.Feedback type="invalid">
-                                    Please assign this task to a user.
-                                </Form.Control.Feedback>
-                            </Form.Group>
-                        </Col>
-                    </Row>
-
-                    <Row className="mb-3">
-                        <Col md={6}>
-                            <Form.Group controlId="taskDueDate">
-                                <Form.Label>Due Date</Form.Label>
-                                <Form.Control
-                                    type="date"
-                                    name="dueDate"
-                                    value={formData.dueDate}
-                                    onChange={handleChange}
-                                />
-                            </Form.Group>
-                        </Col>
-                        {task && (
-                            <Col md={6}>
-                                <Form.Group controlId="taskStatus">
-                                    <Form.Label>Status</Form.Label>
-                                    <Form.Select
-                                        name="status"
-                                        value={formData.status}
-                                        onChange={handleChange}
-                                    >
-                                        <option value="pending">Pending</option>
-                                        <option value="in_progress">In Progress</option>
-                                        <option value="completed">Completed</option>
-                                    </Form.Select>
-                                </Form.Group>
-                            </Col>
-                        )}
-                    </Row>
-                </Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={onHide} disabled={loading}>
-                        Cancel
-                    </Button>
-                    <Button type="submit" variant="primary" disabled={loading}>
-                        {loading ? 'Saving...' : (task ? 'Update Task' : 'Create Task')}
-                    </Button>
-                </Modal.Footer>
-            </Form>
-        </Modal>
+                                    <MenuItem value="pending">Pending</MenuItem>
+                                    <MenuItem value="in_progress">In Progress</MenuItem>
+                                    <MenuItem value="completed">Completed</MenuItem>
+                                </Select>
+                            </FormControl>
+                        </Grid>
+                    )}
+                </Grid>
+            </DialogContent>
+            <DialogActions sx={{ p: 2 }}>
+                <Button onClick={onClose} disabled={loading}>
+                    Cancel
+                </Button>
+                <Button 
+                    type="submit" 
+                    variant="contained" 
+                    disabled={loading}
+                    startIcon={loading ? <CircularProgress size={16} /> : null}
+                >
+                    {loading ? 'Saving...' : (task ? 'Update Task' : 'Create Task')}
+                </Button>
+            </DialogActions>
+        </Dialog>
     );
 };
 
