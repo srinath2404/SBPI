@@ -1,14 +1,12 @@
 {
   "name": "sbpi",
   "version": "1.0.0",
-  "description": "A comprehensive inventory management system for HDP pipe manufacturing, designed to manage raw materials, production, worker accounts, stock, and financial analysis through a structured process.",
-  "main": "index.js",
+  "description": "A comprehensive inventory management system for HDP pipe manufacturing",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "cd frontend && npm install && npm run build",
+    "build": "echo 'Building frontend...' && cd frontend && npm install && npm run build",
     "vercel-build": "cd frontend && npm install && npm run build"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
+  "engines": {
+    "node": ">=18.0.0"
+  }
 }
