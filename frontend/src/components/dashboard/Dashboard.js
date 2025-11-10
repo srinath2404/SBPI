@@ -20,7 +20,7 @@ function Dashboard() {
     summary: {}
   });
   const [productionStatus, setProductionStatus] = useState({});
-  const [, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
 
   const monthName = (m) => ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][Math.max(0, Math.min(11, (m||1)-1))];
 
@@ -54,7 +54,7 @@ function Dashboard() {
 
   const fetchStats = async () => {
     try {
-      setIsLoading(true);
+      if (!isLoading) setIsLoading(true);
       const response = await api.get('/dashboard/data');
       const dashboardData = response.data || { 
         rawMaterialUsage: [], 

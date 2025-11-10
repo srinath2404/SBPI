@@ -90,7 +90,8 @@ function PipeList() {
 
   useEffect(() => {
     fetchPipes();
-  }, [fetchPipes]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const calculateStats = (pipeData) => {
     if (!Array.isArray(pipeData) || !pipeData.length) return {};
@@ -183,7 +184,8 @@ function PipeList() {
     if (Array.isArray(pipes)) {
       applyFiltersAndSearch();
     }
-  }, [pipes, searchTerm, filters, sortBy, sortOrder, applyFiltersAndSearch]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pipes, searchTerm, filters, sortBy, sortOrder]);
 
   const handleFilterChange = (field, value) => {
     setFilters(prev => ({ ...prev, [field]: value }));

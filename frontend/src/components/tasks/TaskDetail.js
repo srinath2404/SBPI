@@ -51,7 +51,8 @@ const TaskDetail = () => {
 
     useEffect(() => {
         fetchTask();
-    }, [fetchTask]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [taskId]);
 
     // Handle task update
     const handleTaskUpdate = async (taskData) => {

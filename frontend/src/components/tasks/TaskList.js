@@ -141,7 +141,8 @@ const TaskList = () => {
     // Load tasks on mount and when filters change
     useEffect(() => {
         fetchTasks();
-    }, [fetchTasks]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filters]);
 
     return (
         <Box>
