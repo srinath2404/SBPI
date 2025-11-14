@@ -7,10 +7,21 @@ const getBaseURL = () => {
     
     // If environment variable is available, use it
     if (envUrl) {
-        return `${envUrl}/api`;
+        // Remove trailing slash if present
+        const cleanUrl = envUrl.replace(/\/$/, '');
+        return `${cleanUrl}/api`;
     }
     
-    // Fallback to localhost if environment URL is not available
+    // Check if we're in production (Vercel)
+    const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+    
+    if (isProduction) {
+        // In production, use the Render backend URL as fallback
+        console.error('REACT_APP_API_URL is not set! Using fallback backend URL.');
+        return 'https://sbpi-2.onrender.com/api';
+    }
+    
+    // Fallback to localhost only in development
     return 'http://localhost:5000/api';
 };
 
