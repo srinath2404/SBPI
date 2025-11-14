@@ -17,7 +17,8 @@ const getBaseURL = () => {
     
     if (isProduction) {
         // In production, use the Render backend URL as fallback
-        // Note: Set REACT_APP_API_URL in Vercel environment variables for best practice
+        console.warn('REACT_APP_API_URL is not set! Using fallback backend URL: https://sbpi-2.onrender.com');
+        console.warn('To fix: Go to Vercel → Settings → Environment Variables → Add REACT_APP_API_URL = https://sbpi-2.onrender.com');
         return 'https://sbpi-2.onrender.com/api';
     }
     
