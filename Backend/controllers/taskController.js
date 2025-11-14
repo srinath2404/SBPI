@@ -99,7 +99,7 @@ exports.getTaskById = async (req, res) => {
 // Update a task
 exports.updateTask = async (req, res) => {
     try {
-        const { title, description, status, priority, dueDate } = req.body;
+        const { title, description, status, priority, assignedTo, dueDate } = req.body;
         const taskId = req.params.id;
 
         // Find the task
@@ -118,6 +118,23 @@ exports.updateTask = async (req, res) => {
         if (description) task.description = description;
         if (priority) task.priority = priority;
         if (dueDate) task.dueDate = dueDate;
+
+        // Update assignedTo if provided (only managers can reassign tasks)
+        if (assignedTo) {
+            if (req.user.role !== 'manager') {
+                return res.status(403).json({ message: 'Only managers can reassign tasks' });
+            }
+            
+            // Validate that the assigned user exists
+            const assignedUser = await User.findById(assignedTo);
+            if (!assignedUser) {
+                return res.status(404).json({ message: 'Assigned user not found' });
+            }
+            
+            task.assignedTo = assignedTo;
+            // Reset read status when task is reassigned
+            task.read = false;
+        }
 
         // Only allow status updates
         if (status) {
