@@ -6,13 +6,23 @@ exports.createTask = async (req, res) => {
     try {
         const { title, description, priority, assignedTo, dueDate } = req.body;
 
+        const isManager = req.user.role === 'manager';
+
+        // For managers, they must explicitly choose an assignee.
+        // For workers, tasks are always assigned to themselves (personal todo list).
+        const finalAssignedTo = isManager ? assignedTo : req.user._id;
+
         // Validate required fields
-        if (!title || !description || !assignedTo) {
-            return res.status(400).json({ message: 'Title, description, and assignedTo are required' });
+        if (!title || !description) {
+            return res.status(400).json({ message: 'Title and description are required' });
+        }
+
+        if (isManager && !assignedTo) {
+            return res.status(400).json({ message: 'Managers must select a user to assign the task to' });
         }
 
         // Check if assigned user exists
-        const assignedUser = await User.findById(assignedTo);
+        const assignedUser = await User.findById(finalAssignedTo);
         if (!assignedUser) {
             return res.status(404).json({ message: 'Assigned user not found' });
         }
@@ -22,7 +32,7 @@ exports.createTask = async (req, res) => {
             title,
             description,
             priority: priority || 'medium',
-            assignedTo,
+            assignedTo: finalAssignedTo,
             createdBy: req.user._id,
             dueDate: dueDate || undefined
         });

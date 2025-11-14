@@ -41,7 +41,7 @@ router.post('/forgot-password', async (req, res) => {
       const mailOptions = {
         from: 'srinathgaddam41@gmail.com',
         to: email,
-        subject: 'Your New Password - SBPI Management',
+        subject: 'Your New Password - Sri Balaji HDPE pipes',
         html: `
           <div style="font-family: Arial, sans-serif; padding: 20px;">
             <h2 style="color: #2c3e50;">Password Reset Notification</h2>
@@ -54,7 +54,7 @@ router.post('/forgot-password', async (req, res) => {
             <p>If you did not request this password reset, please contact us immediately.</p>
             <br>
             <p>Best regards,</p>
-            <p><strong>SBPI Management Team</strong></p>
+            <p><strong>Sri Balaji HDPE pipes Team</strong></p>
           </div>
         `
       };

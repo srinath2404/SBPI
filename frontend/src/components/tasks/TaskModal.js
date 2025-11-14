@@ -28,8 +28,23 @@ const TaskModal = ({ open, onClose, onSave, task }) => {
     });
     const [loading, setLoading] = useState(false);
     const [errors, setErrors] = useState({});
+    const [role, setRole] = useState('worker');
+    const [currentUserId, setCurrentUserId] = useState(null);
 
-    // Load users for assignment dropdown
+    // Get current user info (role & id) from localStorage
+    useEffect(() => {
+        try {
+            const userData = JSON.parse(localStorage.getItem('user') || '{}');
+            setRole(userData.role || 'worker');
+            setCurrentUserId(userData.id || null);
+        } catch (error) {
+            console.error('Error parsing user from localStorage:', error);
+            setRole('worker');
+            setCurrentUserId(null);
+        }
+    }, []);
+
+    // Load users for assignment dropdown (manager only)
     useEffect(() => {
         const fetchUsers = async () => {
             try {
@@ -40,10 +55,10 @@ const TaskModal = ({ open, onClose, onSave, task }) => {
             }
         };
 
-        if (open) {
+        if (open && role === 'manager') {
             fetchUsers();
         }
-    }, [open]);
+    }, [open, role]);
 
     // Set form data when task changes
     useEffect(() => {
@@ -95,7 +110,8 @@ const TaskModal = ({ open, onClose, onSave, task }) => {
         if (!formData.description.trim()) {
             newErrors.description = 'Description is required';
         }
-        if (!formData.assignedTo) {
+        // Only managers must choose an assignee. Workers' tasks are auto-assigned to themselves.
+        if (role === 'manager' && !formData.assignedTo) {
             newErrors.assignedTo = 'Please assign this task to a user';
         }
         setErrors(newErrors);
@@ -112,7 +128,12 @@ const TaskModal = ({ open, onClose, onSave, task }) => {
         
         setLoading(true);
         try {
-            await onSave(formData);
+            // For workers, force assignTo to themselves so they can't assign to others
+            const payload = role === 'manager' || !currentUserId
+                ? formData
+                : { ...formData, assignedTo: currentUserId };
+
+            await onSave(payload);
             onClose();
         } catch (error) {
             console.error('Error saving task:', error);
@@ -183,31 +204,33 @@ const TaskModal = ({ open, onClose, onSave, task }) => {
                         </FormControl>
                     </Grid>
 
-                    <Grid item xs={12} sm={6}>
-                        <FormControl fullWidth required error={!!errors.assignedTo}>
-                            <InputLabel>Assign To</InputLabel>
-                            <Select
-                                name="assignedTo"
-                                value={formData.assignedTo}
-                                label="Assign To"
-                                onChange={handleChange}
-                            >
-                                <MenuItem value="">
-                                    <em>Select User</em>
-                                </MenuItem>
-                                {users.map(user => (
-                                    <MenuItem key={user._id} value={user._id}>
-                                        {user.name}
+                    {role === 'manager' && (
+                        <Grid item xs={12} sm={6}>
+                            <FormControl fullWidth required error={!!errors.assignedTo}>
+                                <InputLabel>Assign To</InputLabel>
+                                <Select
+                                    name="assignedTo"
+                                    value={formData.assignedTo}
+                                    label="Assign To"
+                                    onChange={handleChange}
+                                >
+                                    <MenuItem value="">
+                                        <em>Select User</em>
                                     </MenuItem>
-                                ))}
-                            </Select>
-                            {errors.assignedTo && (
-                                <Box sx={{ color: 'error.main', fontSize: '0.75rem', mt: 0.5, ml: 1.75 }}>
-                                    {errors.assignedTo}
-                                </Box>
-                            )}
-                        </FormControl>
-                    </Grid>
+                                    {users.map(user => (
+                                        <MenuItem key={user._id} value={user._id}>
+                                            {user.name}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                                {errors.assignedTo && (
+                                    <Box sx={{ color: 'error.main', fontSize: '0.75rem', mt: 0.5, ml: 1.75 }}>
+                                        {errors.assignedTo}
+                                    </Box>
+                                )}
+                            </FormControl>
+                        </Grid>
+                    )}
 
                     <Grid item xs={12} sm={6}>
                         <TextField
