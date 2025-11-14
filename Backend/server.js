@@ -25,7 +25,13 @@ const taskRoutes = require("./routes/taskRoutes"); // Task management system
 const app = express();
 
 app.use(cors({
-  origin: ['https://sbpi-htaa.vercel.app', 'http://localhost:3000', 'http://localhost:3001'],
+  origin: [
+    'https://sbpi-2.onrender.com',        // Backend URL
+    'https://sbpi-f3cb.vercel.app',       // Vercel frontend (current deployment)
+    'https://sbpi-htaa.vercel.app',       // Previous Vercel deployment (keep for compatibility)
+    'http://localhost:3000',               // Local development
+    'http://localhost:3001'                // Local development alternative port
+  ],
   credentials: true
 }));
 app.use(helmet({
