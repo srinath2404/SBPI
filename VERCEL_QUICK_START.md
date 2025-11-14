@@ -31,9 +31,9 @@ Go to your project → Settings → Environment Variables and add:
 2. Click "Add New Project"
 3. Import your Git repository
 4. Configure:
-   - **Root Directory**: Leave empty (or set to `frontend` if needed)
-   - **Build Command**: `cd frontend && npm install && npm run build`
-   - **Output Directory**: `frontend/build`
+   - **Root Directory**: Leave empty (DO NOT set to `frontend`)
+   - **Build Command**: Will be auto-detected from `vercel.json` (or set to `cd frontend && npm install && npm run build`)
+   - **Output Directory**: Will be auto-detected from `vercel.json` (or set to `frontend/build`)
    - **Install Command**: Leave default
 5. Add environment variable: `REACT_APP_API_URL` = `https://sbpi-1.onrender.com`
 6. Click "Deploy"
