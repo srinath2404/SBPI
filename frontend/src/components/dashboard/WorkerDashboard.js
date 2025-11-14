@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Grid, Card, CardContent, Typography, Chip, Avatar, List, ListItem, ListItemText, ListItemAvatar, LinearProgress, Paper, CircularProgress, Button, Backdrop, Alert } from '@mui/material';
-import { Person, TrendingUp, Speed, Grade, Assessment, CalendarToday, Work, Refresh, WifiOff, SignalWifiOff } from '@mui/icons-material';
+import { Person, TrendingUp, Speed, Grade, Assessment, CalendarToday, Work, Refresh, WifiOff } from '@mui/icons-material';
 import Navbar from '../layout/Navbar';
 import api from '../../utils/api';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar } from 'recharts';
@@ -37,6 +37,7 @@ function WorkerDashboard() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
   // Handle online status change

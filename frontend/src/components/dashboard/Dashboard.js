@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Box, Grid, Card, CardContent, Typography, Chip, Avatar, List, ListItem, ListItemText, ListItemAvatar } from '@mui/material';
-import { TrendingUp, TrendingDown, Person, Inventory, AttachMoney, Speed, Grade, Schedule } from '@mui/icons-material';
+import { TrendingUp, Person, Inventory, AttachMoney, Speed, Grade, Schedule } from '@mui/icons-material';
 import Navbar from '../layout/Navbar';
 import api from '../../utils/api';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RechartsTooltip, CartesianGrid, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
@@ -50,6 +50,7 @@ function Dashboard() {
     }, 30000);
 
     return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchStats = async () => {

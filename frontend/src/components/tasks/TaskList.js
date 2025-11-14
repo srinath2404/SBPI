@@ -23,7 +23,7 @@ import {
   Tooltip,
   Grid
 } from '@mui/material';
-import { Add, Edit, Delete, ArrowBack } from '@mui/icons-material';
+import { Add, Edit, Delete } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import TaskModal from './TaskModal';
 import api from '../../utils/api';

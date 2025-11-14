@@ -1,7 +1,6 @@
-import React, { useState, useCallback } from 'react';
-import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, CircularProgress, Alert, Card, CardContent, Grid, FormControl, InputLabel, Select, MenuItem, FormControlLabel, Checkbox, TextField, Stack, Pagination } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Button, Typography, Table, TableBody, TableCell, TableHead, TableRow, CircularProgress, Alert, Card, CardContent, Grid, FormControl, InputLabel, Select, MenuItem, FormControlLabel, Checkbox, TextField, Stack, Pagination } from '@mui/material';
 import { UploadFile as UploadFileIcon, CloudUpload } from '@mui/icons-material';
-import * as XLSX from 'xlsx';
 import api from '../../utils/api';
 import Navbar from '../layout/Navbar';
 

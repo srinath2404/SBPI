@@ -1,5 +1,5 @@
 // Centralized MUI theme with light/dark modes and design tokens
-import React, { createContext, useMemo, useState } from 'react';
+import { createContext, useMemo, useState } from 'react';
 import { createTheme, responsiveFontSizes } from '@mui/material/styles';
 
 export const ColorModeContext = createContext({ mode: 'light', toggleColorMode: () => {} });

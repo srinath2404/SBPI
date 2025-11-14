@@ -124,6 +124,7 @@ const NotificationCenter = () => {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     
     // Fetch unread count on mount and every 30 seconds
@@ -138,6 +139,7 @@ const NotificationCenter = () => {
                 clearInterval(interval);
             };
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOffline]);
 
     return (

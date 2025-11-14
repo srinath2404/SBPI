@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -10,7 +10,6 @@ import {
   TableHead,
   TableRow,
   Paper,
-  CircularProgress,
   Alert,
   Dialog,
   DialogTitle,
@@ -19,8 +18,7 @@ import {
   TextField,
   IconButton
 } from '@mui/material';
-import { Add, Delete, Search, Clear, VpnKey, Refresh } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { Add, Delete } from '@mui/icons-material';
 import api from '../../utils/api';
 import Navbar from '../layout/Navbar';
 

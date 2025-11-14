@@ -7,16 +7,8 @@ import {
   Grid,
   Card,
   CardContent,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Checkbox,
-  FormControlLabel,
-  Pagination,
   Tooltip,
   Chip,
-  Avatar,
   Table,
   TableBody,
   TableCell,
@@ -24,7 +16,6 @@ import {
   TableHead,
   TableRow,
   Paper,
-  CircularProgress,
   Alert,
   InputAdornment,
   FormControl,
@@ -34,7 +25,7 @@ import {
   Collapse,
   IconButton
 } from '@mui/material';
-import { Add, Edit as EditIcon, Delete as DeleteIcon, Search, Clear, GetApp } from '@mui/icons-material';
+import { Add, Edit as EditIcon, Delete as DeleteIcon, Search } from '@mui/icons-material';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ViewIcon from '@mui/icons-material/Visibility';
@@ -61,8 +52,6 @@ function PipeList() {
   const [sortOrder, setSortOrder] = useState('desc');
   const [showFilters, setShowFilters] = useState(false);
   const [stats, setStats] = useState({});
-  const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
   const navigate = useNavigate();
 
   const fetchPipes = useCallback(async () => {
