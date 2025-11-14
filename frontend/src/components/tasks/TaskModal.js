@@ -48,7 +48,8 @@ const TaskModal = ({ open, onClose, onSave, task }) => {
     useEffect(() => {
         const fetchUsers = async () => {
             try {
-                const { data } = await api.get('/workers');
+                // Use the same endpoint as WorkerList (manager-only worker list)
+                const { data } = await api.get('/workers/all');
                 setUsers(data || []);
             } catch (error) {
                 console.error('Error fetching users:', error);
