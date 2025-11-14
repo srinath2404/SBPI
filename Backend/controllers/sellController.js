@@ -1,5 +1,7 @@
 const Pipe = require("../models/Pipe");
 const SellRequest = require("../models/SellRequest");
+const axios = require("axios");
+const crypto = require("crypto");
 
 // Response messages
 const MESSAGES = {
@@ -12,13 +14,14 @@ const MESSAGES = {
     MANAGER_ONLY: "Only managers can process sell requests",
     APPROVE_SUCCESS: "Sell request approved successfully",
     REJECT_SUCCESS: "Sell request rejected successfully",
+    PAYMENT_INIT_FAILED: "Failed to initiate payment with PhonePe",
     SERVER_ERROR: "Server error"
 };
 
 // Create sell request
 exports.createSellRequest = async (req, res) => {
     try {
-        const { billNumber, pipes } = req.body;
+        const { billNumber, customerName, customerPlace, customerContact, pipes } = req.body;
 
         // Validate request data
         if (!billNumber || !pipes || !pipes.length) {
@@ -41,6 +44,9 @@ exports.createSellRequest = async (req, res) => {
         // Create and save sell request
         const sellRequest = new SellRequest({
             billNumber,
+            customerName,
+            customerPlace,
+            customerContact,
             pipes: pipes.map(pipe => ({
                 serialNumber: pipe.serialNumber,
                 soldLength: Number(pipe.soldLength),
@@ -48,6 +54,7 @@ exports.createSellRequest = async (req, res) => {
             })),
             requestedBy: req.user._id,
             status: 'pending',
+            paymentStatus: 'not_started',
             createdAt: Date.now()
         });
 
@@ -240,5 +247,99 @@ exports.rejectSellRequest = async (req, res) => {
         });
     } catch (error) {
         res.status(500).json({ message: MESSAGES.SERVER_ERROR, error: error.message });
+    }
+};
+
+// Initiate PhonePe payment for a sell request
+// NOTE: This is a scaffold. You must verify the exact payload/headers with PhonePe docs.
+exports.initiatePhonePePayment = async (req, res) => {
+    try {
+        const sellRequest = await SellRequest.findById(req.params.id);
+        if (!sellRequest) {
+            return res.status(404).json({ message: MESSAGES.REQUEST_NOT_FOUND });
+        }
+
+        // Compute total amount in paise (PhonePe expects smallest currency unit)
+        const totalAmount = sellRequest.pipes.reduce((sum, pipe) => sum + (pipe.price || 0), 0);
+        if (!totalAmount || totalAmount <= 0) {
+            return res.status(400).json({ message: 'Invalid amount for payment' });
+        }
+        const amountInPaise = Math.round(totalAmount * 100);
+
+        const merchantId = process.env.PHONEPE_MERCHANT_ID;
+        const saltKey = process.env.PHONEPE_SALT_KEY;
+        const saltIndex = process.env.PHONEPE_SALT_INDEX;
+        const baseUrl = process.env.PHONEPE_BASE_URL || 'https://api.phonepe.com/apis/hermes';
+        const redirectUrl = process.env.PHONEPE_REDIRECT_URL; // where PhonePe redirects user after payment
+        const callbackUrl = process.env.PHONEPE_CALLBACK_URL; // server-to-server callback
+
+        if (!merchantId || !saltKey || !saltIndex || !redirectUrl || !callbackUrl) {
+            return res.status(500).json({
+                message: MESSAGES.PAYMENT_INIT_FAILED,
+                details: 'PhonePe environment variables are not fully configured'
+            });
+        }
+
+        const merchantTransactionId = `${sellRequest._id}-${Date.now()}`;
+
+        const payload = {
+            merchantId,
+            merchantTransactionId,
+            amount: amountInPaise,
+            merchantUserId: sellRequest.requestedBy?.toString(),
+            mobileNumber: sellRequest.customerContact,
+            paymentInstrument: {
+                type: 'PAY_PAGE'
+            },
+            redirectUrl,
+            callbackUrl
+        };
+
+        const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString('base64');
+        const endpoint = '/pg/v1/pay';
+        const checksum = crypto
+            .createHash('sha256')
+            .update(payloadBase64 + endpoint + saltKey)
+            .digest('hex') + '###' + saltIndex;
+
+        const phonePeResponse = await axios.post(
+            `${baseUrl}${endpoint}`,
+            { request: payloadBase64 },
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-VERIFY': checksum,
+                    'X-MERCHANT-ID': merchantId
+                }
+            }
+        );
+
+        const data = phonePeResponse.data;
+        if (!data || data.success !== true) {
+            return res.status(400).json({
+                message: MESSAGES.PAYMENT_INIT_FAILED,
+                details: data?.message || 'Unknown error from PhonePe'
+            });
+        }
+
+        // Save payment info on sell request
+        sellRequest.paymentStatus = 'pending';
+        sellRequest.paymentProvider = 'PHONEPE';
+        sellRequest.paymentOrderId = merchantTransactionId;
+        sellRequest.paymentMeta = data;
+        await sellRequest.save();
+
+        const redirectInfoUrl = data.data?.instrumentResponse?.redirectInfo?.url;
+        return res.json({
+            message: 'PhonePe payment initiated',
+            redirectUrl: redirectInfoUrl,
+            merchantTransactionId
+        });
+    } catch (error) {
+        console.error('PhonePe initiate error:', error.response?.data || error.message);
+        return res.status(500).json({
+            message: MESSAGES.PAYMENT_INIT_FAILED,
+            error: error.response?.data || error.message
+        });
     }
 };

@@ -20,6 +20,15 @@ const sellRequestSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    customerName: {
+        type: String
+    },
+    customerPlace: {
+        type: String
+    },
+    customerContact: {
+        type: String
+    },
     pipes: {
         type: [pipeSchema],
         required: true,
@@ -34,6 +43,24 @@ const sellRequestSchema = new mongoose.Schema({
         type: String,
         enum: ['pending', 'approved', 'rejected'],
         default: 'pending'
+    },
+    // Payment tracking for PhonePe / other gateways
+    paymentStatus: {
+        type: String,
+        enum: ['not_started', 'pending', 'success', 'failed'],
+        default: 'not_started'
+    },
+    paymentProvider: {
+        type: String
+    },
+    paymentOrderId: {
+        type: String
+    },
+    paymentTransactionId: {
+        type: String
+    },
+    paymentMeta: {
+        type: mongoose.Schema.Types.Mixed
     },
     approvedBy: {
         type: mongoose.Schema.Types.ObjectId,

@@ -4,7 +4,8 @@ const {
     createSellRequest,
     getSellRequests,
     approveSellRequest,
-    rejectSellRequest
+    rejectSellRequest,
+    initiatePhonePePayment
 } = require("../controllers/sellController");
 
 const router = express.Router();
@@ -14,5 +15,8 @@ router.post("/request", protect, createSellRequest);
 router.get("/requests", protect, getSellRequests);
 router.put("/approve/:id", protect, approveSellRequest);
 router.put("/reject/:id", protect, rejectSellRequest);
+
+// PhonePe payment routes (scaffold)
+router.post("/phonepe/initiate/:id", protect, initiatePhonePePayment);
 
 module.exports = router;

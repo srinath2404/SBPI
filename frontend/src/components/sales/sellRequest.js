@@ -41,33 +41,27 @@ function SellRequest() {
   const [pipeAdded, setPipeAdded] = useState(false);
 
   // UPI/PhonePe merchant details from environment (.env)
-  // Set REACT_APP_MERCHANT_UPI_ID and REACT_APP_MERCHANT_NAME in frontend/.env
+  // Currently used only for display / future UPI fallback
   const MERCHANT_UPI_ID = process.env.REACT_APP_MERCHANT_UPI_ID || 'yourupi@upi';
   const MERCHANT_NAME = process.env.REACT_APP_MERCHANT_NAME || 'Your Shop Name';
 
-  // Trigger UPI/PhonePe payment immediately after creating a sell request
-  const startUpiPaymentFromRequest = (billNumber, pipes, customerContact) => {
-    const totalAmount = (pipes || []).reduce(
-      (sum, pipe) => sum + (Number(pipe.price) || 0),
-      0
-    );
-
-    if (!totalAmount || totalAmount <= 0) {
-      setError('Invalid amount for UPI payment');
+  // Call backend to initiate PhonePe PG payment for a sell request
+  const initiatePhonePePayment = async (sellRequestId) => {
+    try {
+      const response = await api.post(`/sell/phonepe/initiate/${sellRequestId}`);
+      const redirectUrl = response.data?.redirectUrl;
+      if (redirectUrl) {
+        window.location.href = redirectUrl;
+      } else {
+        const msg = response.data?.message || 'Unable to start PhonePe payment';
+        setError(msg);
+        setTimeout(() => setError(''), 5000);
+      }
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || err.response?.data?.details || 'Error initiating PhonePe payment';
+      setError(errorMessage);
       setTimeout(() => setError(''), 5000);
-      return;
     }
-
-    const amount = totalAmount.toFixed(2);
-    const noteParts = [];
-    if (billNumber) noteParts.push(`Bill ${billNumber}`);
-    if (customerContact) noteParts.push(`Mob: ${customerContact}`);
-    const note = noteParts.join(' - ') || 'Pipe sale payment';
-
-    const upiUrl = `upi://pay?pa=${encodeURIComponent(MERCHANT_UPI_ID)}&pn=${encodeURIComponent(MERCHANT_NAME)}&am=${encodeURIComponent(amount)}&cu=INR&tn=${encodeURIComponent(note)}`;
-
-    // On mobile devices, this should open the UPI app chooser (PhonePe, GPay, etc.)
-    window.location.href = upiUrl;
   };
 
   const fetchSales = useCallback(async () => {
@@ -129,15 +123,14 @@ function SellRequest() {
         }))
       };
 
-      await api.post('/sell/request', requestData);
+      const response = await api.post('/sell/request', requestData);
+      const createdRequest = response.data?.sellRequest;
       setSuccess('Sales request submitted successfully');
 
-      // Immediately send a UPI/PhonePe payment request using the bill details
-      startUpiPaymentFromRequest(
-        requestData.billNumber,
-        requestData.pipes,
-        requestData.customerContact
-      );
+      // Immediately initiate PhonePe PG payment for this sell request
+      if (createdRequest?._id) {
+        await initiatePhonePePayment(createdRequest._id);
+      }
 
       setFormData({
         billNumber: '',
@@ -348,6 +341,8 @@ function SellRequest() {
                         <TableCell>Sold Length</TableCell>
                         <TableCell>Price</TableCell>
                         <TableCell>Status</TableCell>
+                        <TableCell>Payment Status</TableCell>
+                        <TableCell>Actions</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -360,6 +355,7 @@ function SellRequest() {
                        <TableCell>{sale.pipes[0]?.soldLength}</TableCell>
                        <TableCell>{sale.pipes[0]?.price}</TableCell>
                        <TableCell>{sale.status}</TableCell>
+                       <TableCell>{sale.paymentStatus || 'not_started'}</TableCell>
                        <TableCell>
                          {sale.status === 'pending' && JSON.parse(localStorage.getItem('user') || '{}').role === 'manager' && (
                            <Box sx={{ display: 'flex', gap: 1 }}>
@@ -378,6 +374,20 @@ function SellRequest() {
                                onClick={() => rejectRequest(sale._id)}
                              >
                                Reject
+                             </Button>
+                           </Box>
+                         )}
+
+                         {/* Payment action: allow triggering PhonePe payment if not successful yet */}
+                         {sale.paymentStatus !== 'success' && (
+                           <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                             <Button
+                               variant="outlined"
+                               color="secondary"
+                               size="small"
+                               onClick={() => initiatePhonePePayment(sale._id)}
+                             >
+                               Pay via PhonePe
                              </Button>
                            </Box>
                          )}
