@@ -40,6 +40,36 @@ function SellRequest() {
   const [totalPages, setTotalPages] = useState(1);
   const [pipeAdded, setPipeAdded] = useState(false);
 
+  // UPI/PhonePe merchant details from environment (.env)
+  // Set REACT_APP_MERCHANT_UPI_ID and REACT_APP_MERCHANT_NAME in frontend/.env
+  const MERCHANT_UPI_ID = process.env.REACT_APP_MERCHANT_UPI_ID || 'yourupi@upi';
+  const MERCHANT_NAME = process.env.REACT_APP_MERCHANT_NAME || 'Your Shop Name';
+
+  // Trigger UPI/PhonePe payment immediately after creating a sell request
+  const startUpiPaymentFromRequest = (billNumber, pipes, customerContact) => {
+    const totalAmount = (pipes || []).reduce(
+      (sum, pipe) => sum + (Number(pipe.price) || 0),
+      0
+    );
+
+    if (!totalAmount || totalAmount <= 0) {
+      setError('Invalid amount for UPI payment');
+      setTimeout(() => setError(''), 5000);
+      return;
+    }
+
+    const amount = totalAmount.toFixed(2);
+    const noteParts = [];
+    if (billNumber) noteParts.push(`Bill ${billNumber}`);
+    if (customerContact) noteParts.push(`Mob: ${customerContact}`);
+    const note = noteParts.join(' - ') || 'Pipe sale payment';
+
+    const upiUrl = `upi://pay?pa=${encodeURIComponent(MERCHANT_UPI_ID)}&pn=${encodeURIComponent(MERCHANT_NAME)}&am=${encodeURIComponent(amount)}&cu=INR&tn=${encodeURIComponent(note)}`;
+
+    // On mobile devices, this should open the UPI app chooser (PhonePe, GPay, etc.)
+    window.location.href = upiUrl;
+  };
+
   const fetchSales = useCallback(async () => {
     try {
       const response = await api.get(`/sell/requests?page=${page}&limit=10`);
@@ -79,14 +109,13 @@ function SellRequest() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      
       // Validate required fields
       if (!formData.customerContact) {
         setError('Customer contact is required');
         setTimeout(() => setError(''), 5000);
         return;
       }
-      
+
       // Format the request data according to backend requirements
       const requestData = {
         billNumber: formData.billNumber,
@@ -102,6 +131,14 @@ function SellRequest() {
 
       await api.post('/sell/request', requestData);
       setSuccess('Sales request submitted successfully');
+
+      // Immediately send a UPI/PhonePe payment request using the bill details
+      startUpiPaymentFromRequest(
+        requestData.billNumber,
+        requestData.pipes,
+        requestData.customerContact
+      );
+
       setFormData({
         billNumber: '',
         customerName: '',
