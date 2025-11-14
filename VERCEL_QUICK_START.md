@@ -2,7 +2,7 @@
 
 ## Architecture
 - **Frontend**: Deploy to Vercel
-- **Backend**: Already deployed on Render at `https://sbpi-1.onrender.com`
+- **Backend**: Already deployed on Render at `https://sbpi-2.onrender.com`
 
 ## Prerequisites
 - ✅ Code pushed to GitHub/GitLab/Bitbucket
@@ -22,7 +22,7 @@ vercel login
 Go to your project → Settings → Environment Variables and add:
 
 **Frontend:**
-- `REACT_APP_API_URL` = `https://sbpi-1.onrender.com` (your Render backend URL)
+- `REACT_APP_API_URL` = `https://sbpi-2.onrender.com` (your Render backend URL)
 
 ### 3. Deploy Frontend
 
@@ -35,7 +35,7 @@ Go to your project → Settings → Environment Variables and add:
    - **Build Command**: Will be auto-detected from `vercel.json` (or set to `cd frontend && npm install && npm run build`)
    - **Output Directory**: Will be auto-detected from `vercel.json` (or set to `frontend/build`)
    - **Install Command**: Leave default
-5. Add environment variable: `REACT_APP_API_URL` = `https://sbpi-1.onrender.com`
+5. Add environment variable: `REACT_APP_API_URL` = `https://sbpi-2.onrender.com`
 6. Click "Deploy"
 
 **Option B: Via CLI**
@@ -52,7 +52,7 @@ After Vercel deployment, update your backend CORS in `Backend/server.js` (on Ren
 2. Update the environment variable or code in `Backend/server.js` line 28:
 ```javascript
 origin: [
-  'https://sbpi-1.onrender.com',        // Your Render backend
+  'https://sbpi-2.onrender.com',        // Your Render backend
   'https://your-app.vercel.app',        // Your Vercel frontend (add after first deploy)
   'http://localhost:3000',
   'http://localhost:3001'
@@ -66,7 +66,7 @@ origin: [
 1. Visit your Vercel deployment URL
 2. Check browser console for any API errors
 3. Test login functionality
-4. Verify API calls are going to `https://sbpi-1.onrender.com`
+4. Verify API calls are going to `https://sbpi-2.onrender.com`
 
 ## Files Created/Modified
 
@@ -76,7 +76,7 @@ origin: [
 ## Important Notes
 
 - **Backend is on Render**: No need to deploy backend to Vercel
-- **API URL**: Frontend will call `https://sbpi-1.onrender.com/api/*`
+- **API URL**: Frontend will call `https://sbpi-2.onrender.com/api/*`
 - **CORS**: Make sure Render backend allows your Vercel frontend URL
 - **Environment Variables**: Only `REACT_APP_API_URL` is needed in Vercel
 
