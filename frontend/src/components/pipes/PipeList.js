@@ -30,6 +30,7 @@ import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ViewIcon from '@mui/icons-material/Visibility';
 import api from '../../utils/api';
+import { fetchInventoryWithOffline } from '../../utils/offlineInventory';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../layout/Navbar';
 
@@ -57,10 +58,10 @@ function PipeList() {
   const fetchPipes = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await api.get('/inventory/all');
-      
-      // Backend returns an object: { pipes: [...], pagination: {...}, filters: {...} }
-      const pipesData = Array.isArray(response.data?.pipes) ? response.data.pipes : [];
+      const result = await fetchInventoryWithOffline();
+
+      // Result shape mirrors backend: { pipes: [...], ... }
+      const pipesData = Array.isArray(result?.pipes) ? result.pipes : [];
       setPipes(pipesData);
       
       // Calculate statistics

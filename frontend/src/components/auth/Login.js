@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
+import { loginWithOfflineSupport } from '../../utils/authOffline';
 
 function Login() {
   const [credentials, setCredentials] = useState({ email: '', password: '' });
@@ -29,12 +30,17 @@ function Login() {
     setError('');
     
     try {
-      const response = await api.post('/auth/login', credentials);
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+      const result = await loginWithOfflineSupport({
+        email: credentials.email,
+        password: credentials.password,
+      });
+
+      localStorage.setItem('token', result.token);
+      localStorage.setItem('user', JSON.stringify(result.user));
       navigate('/dashboard');
     } catch (error) {
-      setError(error.response?.data?.message || 'Login failed. Please check your internet connection and try again.');
+      const message = error.response?.data?.message || error.message || 'Login failed. Please check your internet connection and try again.';
+      setError(message);
     }
   };
 

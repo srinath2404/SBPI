@@ -70,6 +70,7 @@ function Navbar() {
       { label: 'Mail', path: '/mail' },
       { label: 'Workers', path: '/workers' },
       { label: 'Pricing', path: '/pricing' },
+      { label: 'Finance', path: '/finance' },
     ];
     return role === 'manager' ? [...base, ...managerOnly] : base;
   }, [role]);
@@ -167,6 +168,9 @@ function Navbar() {
             )}
             {role === 'manager' && (
               <MenuItem onClick={() => { navigate('/pricing'); closeMenu(); }}>Pricing</MenuItem>
+            )}
+            {role === 'manager' && (
+              <MenuItem onClick={() => { navigate('/finance'); closeMenu(); }}>Finance</MenuItem>
             )}
             <MenuItem onClick={() => { navigate('/pipes'); closeMenu(); }}>Inventory</MenuItem>
             <MenuItem onClick={() => { navigate('/tasks'); closeMenu(); }}>Tasks</MenuItem>

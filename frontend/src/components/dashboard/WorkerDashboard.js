@@ -3,15 +3,29 @@ import { Box, Grid, Card, CardContent, Typography, Chip, Avatar, List, ListItem,
 import { Person, TrendingUp, Speed, Grade, Assessment, CalendarToday, Work, Refresh, WifiOff } from '@mui/icons-material';
 import Navbar from '../layout/Navbar';
 import api from '../../utils/api';
+import { saveWorkerDashboard, getWorkerDashboard } from '../../utils/indexedDB';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, BarChart, Bar } from 'recharts';
+
+const DEFAULT_WORKER_DATA = {
+  monthlyProduction: [],
+  currentMonthStats: {},
+  recentWork: [],
+  qualityTrend: [],
+  performance: {},
+};
+
+const getCurrentUserEmail = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return user.email || null;
+  } catch (e) {
+    return null;
+  }
+};
 
 function WorkerDashboard() {
   const [data, setData] = useState({
-    monthlyProduction: [],
-    currentMonthStats: {},
-    recentWork: [],
-    qualityTrend: [],
-    performance: {}
+    ...DEFAULT_WORKER_DATA,
   });
   const [loadingStates, setLoadingStates] = useState({
     main: true,
@@ -52,8 +66,20 @@ function WorkerDashboard() {
   };
 
   const fetchWorkerData = async () => {
-    // Don't attempt to fetch if offline
-    if (isOffline) {
+    const email = getCurrentUserEmail();
+
+    // If offline, try to load cached worker dashboard data
+    if (isOffline || !navigator.onLine) {
+      if (email) {
+        try {
+          const cached = await getWorkerDashboard(email);
+          if (cached?.data) {
+            setData({ ...DEFAULT_WORKER_DATA, ...cached.data });
+          }
+        } catch (e) {
+          console.error('Error loading cached worker dashboard data:', e);
+        }
+      }
       setIsLoading(false);
       setGlobalLoading(false);
       return;
@@ -70,24 +96,15 @@ function WorkerDashboard() {
       });
       console.log('Worker dashboard data:', response.data);
       
-      // Set default empty data structure if response data is missing
-      const defaultData = {
-        monthlyProduction: [],
-        currentMonthStats: {},
-        recentWork: [],
-        qualityTrend: [],
-        performance: {}
+      const merged = {
+        ...DEFAULT_WORKER_DATA,
+        ...(response.data || {}),
       };
-      
-      // Merge response data with default data to ensure all properties exist
-      if (response.data && Object.keys(response.data).length > 0) {
-        setData({
-          ...defaultData,
-          ...response.data
-        });
-      } else {
-        console.warn('Worker dashboard returned empty data');
-        setData(defaultData);
+
+      setData(merged);
+
+      if (email) {
+        await saveWorkerDashboard(email, merged);
       }
     } catch (error) {
       console.error('Error fetching worker data:', error);
@@ -98,14 +115,22 @@ function WorkerDashboard() {
         setIsOffline(true);
       }
       
-      // Set default data on error
-      setData({
-        monthlyProduction: [],
-        currentMonthStats: {},
-        recentWork: [],
-        qualityTrend: [],
-        performance: {}
-      });
+      // On error, try to fall back to cached data
+      if (email) {
+        try {
+          const cached = await getWorkerDashboard(email);
+          if (cached?.data) {
+            setData({ ...DEFAULT_WORKER_DATA, ...cached.data });
+          } else {
+            setData({ ...DEFAULT_WORKER_DATA });
+          }
+        } catch (e) {
+          console.error('Error loading cached worker dashboard data:', e);
+          setData({ ...DEFAULT_WORKER_DATA });
+        }
+      } else {
+        setData({ ...DEFAULT_WORKER_DATA });
+      }
     } finally {
       setIsLoading(false);
       setGlobalLoading(false);

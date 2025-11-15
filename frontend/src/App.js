@@ -5,6 +5,7 @@ import Login from './components/auth/Login';
 import SellRequest from './components/sales/sellRequest';
 import Dashboard from './components/dashboard/Dashboard';
 import WorkerDashboard from './components/dashboard/WorkerDashboard';
+import FinanceDashboard from './components/dashboard/FinanceDashboard';
 import PipeList from './components/pipes/PipeList';
 import AddPipe from './components/pipes/AddPipe';
 import WorkerList from './components/workers/WorkerList';
@@ -38,6 +39,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Login />} />
             <Route path="/dashboard" element={<ManagerRoute><Dashboard /></ManagerRoute>} />
+            <Route path="/finance" element={<ManagerRoute><FinanceDashboard /></ManagerRoute>} />
             <Route path="/worker-dashboard" element={<PrivateRoute><WorkerDashboard /></PrivateRoute>} />
             <Route path="/pipes" element={<PrivateRoute><PipeList /></PrivateRoute>} />
             <Route path="/pipes/add" element={<PrivateRoute><AddPipe /></PrivateRoute>} />

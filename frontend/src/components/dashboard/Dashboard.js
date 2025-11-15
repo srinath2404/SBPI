@@ -3,21 +3,35 @@ import { Box, Grid, Card, CardContent, Typography, Chip, Avatar, List, ListItem,
 import { TrendingUp, Person, Inventory, AttachMoney, Speed, Grade, Schedule } from '@mui/icons-material';
 import Navbar from '../layout/Navbar';
 import api from '../../utils/api';
+import { saveManagerDashboard, getManagerDashboard } from '../../utils/indexedDB';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RechartsTooltip, CartesianGrid, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 
+const DEFAULT_DASHBOARD_DATA = {
+  rawMaterialUsage: [],
+  production: [],
+  sales: [],
+  revenue: [],
+  currentMonthStats: {},
+  workerPerformance: [],
+  inventoryStatus: [],
+  recentActivity: [],
+  qualityMetrics: [],
+  batchPerformance: [],
+  summary: {},
+};
+
+const getCurrentUserEmail = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return user.email || null;
+  } catch (e) {
+    return null;
+  }
+};
+
 function Dashboard() {
-  const [data, setData] = useState({ 
-    rawMaterialUsage: [], 
-    production: [], 
-    sales: [], 
-    revenue: [],
-    currentMonthStats: {},
-    workerPerformance: [],
-    inventoryStatus: [],
-    recentActivity: [],
-    qualityMetrics: [],
-    batchPerformance: [],
-    summary: {}
+  const [data, setData] = useState({
+    ...DEFAULT_DASHBOARD_DATA,
   });
   const [productionStatus, setProductionStatus] = useState({});
   const [isLoading, setIsLoading] = useState(true);
@@ -54,31 +68,42 @@ function Dashboard() {
   }, []);
 
   const fetchStats = async () => {
+    const email = getCurrentUserEmail();
     try {
       if (!isLoading) setIsLoading(true);
-      const response = await api.get('/dashboard/data');
-      const dashboardData = response.data || { 
-        rawMaterialUsage: [], 
-        production: [], 
-        sales: [], 
-        revenue: [],
-        currentMonthStats: {},
-        workerPerformance: [],
-        inventoryStatus: [],
-        recentActivity: [],
-        qualityMetrics: [],
-        batchPerformance: [],
-        summary: {}
-      };
-      
-      setData(dashboardData);
-      
-      // Dashboard data fetched successfully
+
+      if (navigator.onLine) {
+        const response = await api.get('/dashboard/data');
+        const dashboardData = {
+          ...DEFAULT_DASHBOARD_DATA,
+          ...(response.data || {}),
+        };
+
+        setData(dashboardData);
+
+        if (email) {
+          await saveManagerDashboard(email, dashboardData);
+        }
+      } else if (email) {
+        const cached = await getManagerDashboard(email);
+        if (cached?.data) {
+          setData({ ...DEFAULT_DASHBOARD_DATA, ...cached.data });
+        }
+      }
     } catch (error) {
       console.error('Error fetching stats:', error);
-      
-      // Error handling without offline functionality
-      console.error('Error fetching stats:', error);
+
+      // On error, try to fall back to cached dashboard data
+      if (email) {
+        try {
+          const cached = await getManagerDashboard(email);
+          if (cached?.data) {
+            setData({ ...DEFAULT_DASHBOARD_DATA, ...cached.data });
+          }
+        } catch (e) {
+          console.error('Error loading cached dashboard data:', e);
+        }
+      }
     } finally {
       setIsLoading(false);
     }
@@ -123,9 +148,9 @@ function Dashboard() {
           />
         </Typography>
 
-        {/* Summary Cards */}
+        {/* Summary Cards (production only, finance moved to separate page) */}
         <Grid container spacing={3} sx={{ mb: 4 }}>
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <Card sx={{ bgcolor: 'primary.main', color: 'white' }}>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -141,7 +166,7 @@ function Dashboard() {
             </Card>
           </Grid>
           
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <Card sx={{ bgcolor: 'success.main', color: 'white' }}>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -157,7 +182,7 @@ function Dashboard() {
             </Card>
           </Grid>
           
-          <Grid item xs={12} sm={6} md={3}>
+          <Grid item xs={12} sm={6} md={4}>
             <Card sx={{ bgcolor: 'warning.main', color: 'white' }}>
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -168,22 +193,6 @@ function Dashboard() {
                     <Typography variant="body2">Active Workers</Typography>
                   </Box>
                   <Person sx={{ fontSize: 40, opacity: 0.8 }} />
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ bgcolor: 'secondary.main', color: 'white' }}>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Box>
-                    <Typography variant="h4" component="div">
-                      ₹{(data.currentMonthStats?.totalWeight * 150 || 0).toLocaleString()}
-                    </Typography>
-                    <Typography variant="body2">Monthly Value</Typography>
-                  </Box>
-                  <AttachMoney sx={{ fontSize: 40, opacity: 0.8 }} />
                 </Box>
               </CardContent>
             </Card>
@@ -346,46 +355,6 @@ function Dashboard() {
           </Grid>
         </Grid>
 
-        {/* Revenue & Sales Charts */}
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={6}>
-            <Card sx={{ height: 360 }}>
-              <CardContent sx={{ height: '100%' }}>
-                <Typography color="textSecondary" gutterBottom>
-                  Sales Count by Month
-                </Typography>
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={chartData.sales} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <RechartsTooltip />
-                    <Bar dataKey="count" fill="#ff9800" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </Grid>
-          
-          <Grid item xs={12} md={6}>
-            <Card sx={{ height: 360 }}>
-              <CardContent sx={{ height: '100%' }}>
-                <Typography color="textSecondary" gutterBottom>
-                  Revenue by Month
-                </Typography>
-                <ResponsiveContainer width="100%" height={280}>
-                  <LineChart data={chartData.revenue} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <RechartsTooltip />
-                    <Line type="monotone" dataKey="revenue" stroke="#9c27b0" strokeWidth={2} dot={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
       </Box>
     </Box>
   );

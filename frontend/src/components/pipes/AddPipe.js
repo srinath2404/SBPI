@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import api from '../../utils/api';
+import { addPipeWithOfflineSupport } from '../../utils/offlineInventory';
 
 function AddPipe() {
   const [formData, setFormData] = useState({
@@ -69,9 +70,31 @@ function AddPipe() {
     }
     
     try {
-      const response = await api.post('/inventory/add', formData);
-      const successMessage = response.data?.message || '';
-      const isSuccess = response.status === 201 || successMessage.includes('Pipe added successfully');
+      const result = await addPipeWithOfflineSupport(formData);
+
+      if (result.offline) {
+        // Saved locally for later sync
+        setSuccess(true);
+        setError('');
+        setFormData({
+          serialNumber: '',
+          colorGrade: '',
+          sizeType: '',
+          section: 'A',
+          length: '',
+          weight: '',
+          manufacturingDate: new Date().toISOString().split('T')[0]
+        });
+        setTimeout(() => {
+          setSuccess(false);
+          navigate('/pipes');
+        }, 2500);
+        return;
+      }
+
+      const response = result.response;
+      const successMessage = response?.message || '';
+      const isSuccess = result.status === 201 || successMessage.includes('Pipe added successfully');
       
       if (isSuccess) {
         setSuccess(true);
@@ -92,7 +115,7 @@ function AddPipe() {
         }, 2500);
       }
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Error adding pipe. Please try again.';
+      const errorMessage = error.response?.data?.message || error.message || 'Error adding pipe. Please try again.';
       setError(errorMessage);
     }
   };
