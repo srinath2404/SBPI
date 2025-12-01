@@ -64,7 +64,8 @@ function BulkExcelImport() {
       setCommitResult(null);
       const formData = new FormData();
       formData.append('file', file);
-      const { data } = await api.post('/pipes/preview-excel', formData, {
+      // Use inventory preview endpoint to match commit-excel route
+      const { data } = await api.post('/inventory/preview-excel', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       setSheetName(data.sheetName);

@@ -49,15 +49,24 @@ export const loginOffline = async ({ email, password }) => {
 
 // Unified helper that prefers online login and falls back to offline when needed.
 export const loginWithOfflineSupport = async ({ email, password }) => {
+  // When online, prefer server result. Only fall back to offline login
+  // if the failure looks like a network / connectivity issue (no response).
   if (navigator.onLine) {
     try {
       return await loginOnline({ email, password });
     } catch (err) {
+      // If there is an HTTP response, it's likely bad credentials or similar;
+      // surface that error directly instead of trying offline.
+      if (err && err.response) {
+        throw err;
+      }
+
       // eslint-disable-next-line no-console
-      console.warn('Online login failed, attempting offline login', err);
+      console.warn('Online login failed without response, attempting offline login', err);
       return loginOffline({ email, password });
     }
   }
 
+  // Fully offline: use cached credentials only.
   return loginOffline({ email, password });
 };

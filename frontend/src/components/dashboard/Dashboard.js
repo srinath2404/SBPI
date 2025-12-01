@@ -111,7 +111,7 @@ function Dashboard() {
 
   const fetchProductionStatus = async () => {
     try {
-      const response = await api.get('/dashboard/production-status');
+      const response = await api.get('/dashboard/production-status', { skipLoading: true });
       const productionData = response.data || {};
       
       setProductionStatus(productionData);
@@ -119,7 +119,13 @@ function Dashboard() {
       // Production status fetched successfully
       
     } catch (error) {
-      console.error('Error fetching production status:', error);
+      if (error.code === 'ECONNABORTED') {
+        // eslint-disable-next-line no-console
+        console.warn('Production status request timed out');
+      } else {
+        // eslint-disable-next-line no-console
+        console.error('Error fetching production status:', error);
+      }
       
       // Error handling without offline functionality
     }

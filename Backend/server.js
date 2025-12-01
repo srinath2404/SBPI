@@ -66,6 +66,27 @@ app.get("/", (req, res) => {
   res.send("Backend is working ✅");
 });
 
+// Policy and information pages for payment gateway (e.g., Razorpay)
+app.get('/privacy-policy', (req, res) => {
+  res.send('<h1>Privacy Policy</h1><p>Privacy Policy content will be added here.</p>');
+});
+
+app.get('/terms-and-conditions', (req, res) => {
+  res.send('<h1>Terms and Conditions</h1><p>Terms and Conditions content will be added here.</p>');
+});
+
+app.get('/cancellation-and-refund', (req, res) => {
+  res.send('<h1>Cancellation and Refund Policy</h1><p>Cancellation and Refund policy content will be added here.</p>');
+});
+
+app.get('/shipping-and-delivery', (req, res) => {
+  res.send('<h1>Shipping and Delivery Policy</h1><p>Shipping and Delivery policy content will be added here.</p>');
+});
+
+app.get('/contact-us', (req, res) => {
+  res.send('<h1>Contact Us</h1><p>Contact information will be added here.</p>');
+});
+
 // Add a health check endpoint for connection testing
 app.get("/api/health", (req, res) => {
   res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });

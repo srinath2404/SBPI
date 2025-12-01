@@ -13,6 +13,7 @@ import {
   List,
   ListItem,
   ListItemText,
+  ListItemButton,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -201,24 +202,26 @@ function MailApp() {
                 Email Templates
               </Typography>
               <List>
-                <ListItem 
-                  button 
-                  onClick={() => {
-                    setSubject('Password Reset Instructions');
-                    setMessage('<p>You requested a password reset.</p><p>Click <a href="#">here</a> to reset your password. This link expires in 30 minutes.</p>');
-                  }}
-                >
-                  <ListItemText primary="Password Reset" secondary="Standard password reset template" />
+                <ListItem disablePadding>
+                  <ListItemButton
+                    onClick={() => {
+                      setSubject('Password Reset Instructions');
+                      setMessage('<p>You requested a password reset.</p><p>Click <a href="#">here</a> to reset your password. This link expires in 30 minutes.</p>');
+                    }}
+                  >
+                    <ListItemText primary="Password Reset" secondary="Standard password reset template" />
+                  </ListItemButton>
                 </ListItem>
                 <Divider />
-                <ListItem 
-                  button
-                  onClick={() => {
-                    setSubject('Welcome to SBPI');
-                    setMessage('<p>Welcome to Sri Balaji HDPE Pipes!</p><p>Your account has been created successfully.</p>');
-                  }}
-                >
-                  <ListItemText primary="Welcome Email" secondary="New user welcome message" />
+                <ListItem disablePadding>
+                  <ListItemButton
+                    onClick={() => {
+                      setSubject('Welcome to SBPI');
+                      setMessage('<p>Welcome to Sri Balaji HDPE Pipes!</p><p>Your account has been created successfully.</p>');
+                    }}
+                  >
+                    <ListItemText primary="Welcome Email" secondary="New user welcome message" />
+                  </ListItemButton>
                 </ListItem>
               </List>
             </Paper>

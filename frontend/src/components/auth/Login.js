@@ -39,7 +39,35 @@ function Login() {
       localStorage.setItem('user', JSON.stringify(result.user));
       navigate('/dashboard');
     } catch (error) {
-      const message = error.response?.data?.message || error.message || 'Login failed. Please check your internet connection and try again.';
+      let message = 'Login failed. Please try again.';
+      const backendMessage = error?.response?.data?.message;
+
+      if (!navigator.onLine) {
+        // Pure offline context
+        if (error?.message?.includes('No offline data found')) {
+          message = 'No offline data found for this user on this device. Please login once while online with this email.';
+        } else if (error?.message?.includes('Invalid credentials (offline)')) {
+          message = 'Invalid email or password for offline login.';
+        } else {
+          message = 'You appear to be offline. Please check your internet connection or use a cached account.';
+        }
+      } else if (error?.response) {
+        // Server responded (online)
+        const status = error.response.status;
+        if (status === 400 || status === 401) {
+          // Wrong email/password or similar auth issue
+          message = backendMessage || 'Invalid email or password.';
+        } else if (status >= 500) {
+          message = 'Server error while logging in. Please try again later.';
+        } else {
+          message = backendMessage || 'Login failed due to an unexpected error.';
+        }
+      } else if (error?.message?.includes('Network Error')) {
+        message = 'Network error while contacting server. Please check your internet connection.';
+      } else {
+        message = backendMessage || error?.message || message;
+      }
+
       setError(message);
     }
   };

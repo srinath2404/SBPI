@@ -22,10 +22,17 @@ const NotificationCenter = () => {
         try {
             setHasError(false);
             // Use the api instance
-            const { data } = await api.get('/tasks/unread-count');
+            const { data } = await api.get('/tasks/unread-count', { skipLoading: true });
             setUnreadCount(data.unreadCount);
         } catch (error) {
-            console.error('Error fetching unread count:', error);
+            // Timeouts (ECONNABORTED) are common when backend is slow or sleeping.
+            if (error.code === 'ECONNABORTED') {
+                // eslint-disable-next-line no-console
+                console.warn('Unread count request timed out');
+            } else {
+                // eslint-disable-next-line no-console
+                console.error('Error fetching unread count:', error);
+            }
             setHasError(true);
         }
     };

@@ -1,7 +1,6 @@
 const Pipe = require("../models/Pipe");
 const SellRequest = require("../models/SellRequest");
 const axios = require("axios");
-const crypto = require("crypto");
 
 // Response messages
 const MESSAGES = {
@@ -14,7 +13,7 @@ const MESSAGES = {
     MANAGER_ONLY: "Only managers can process sell requests",
     APPROVE_SUCCESS: "Sell request approved successfully",
     REJECT_SUCCESS: "Sell request rejected successfully",
-    PAYMENT_INIT_FAILED: "Failed to initiate payment with PhonePe",
+    PAYMENT_INIT_FAILED: "Failed to initiate payment with Razorpay",
     SERVER_ERROR: "Server error"
 };
 
@@ -250,93 +249,74 @@ exports.rejectSellRequest = async (req, res) => {
     }
 };
 
-// Initiate PhonePe payment for a sell request
-// NOTE: This is a scaffold. You must verify the exact payload/headers with PhonePe docs.
-exports.initiatePhonePePayment = async (req, res) => {
+// Initiate Razorpay payment for a sell request
+exports.initiateRazorpayPayment = async (req, res) => {
     try {
         const sellRequest = await SellRequest.findById(req.params.id);
         if (!sellRequest) {
             return res.status(404).json({ message: MESSAGES.REQUEST_NOT_FOUND });
         }
 
-        // Compute total amount in paise (PhonePe expects smallest currency unit)
+        // Compute total amount in paise (Razorpay expects smallest currency unit)
         const totalAmount = sellRequest.pipes.reduce((sum, pipe) => sum + (pipe.price || 0), 0);
         if (!totalAmount || totalAmount <= 0) {
             return res.status(400).json({ message: 'Invalid amount for payment' });
         }
         const amountInPaise = Math.round(totalAmount * 100);
 
-        const merchantId = process.env.PHONEPE_MERCHANT_ID;
-        const saltKey = process.env.PHONEPE_SALT_KEY;
-        const saltIndex = process.env.PHONEPE_SALT_INDEX;
-        const baseUrl = process.env.PHONEPE_BASE_URL || 'https://api.phonepe.com/apis/hermes';
-        const redirectUrl = process.env.PHONEPE_REDIRECT_URL; // where PhonePe redirects user after payment
-        const callbackUrl = process.env.PHONEPE_CALLBACK_URL; // server-to-server callback
+        const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
+        const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET;
 
-        if (!merchantId || !saltKey || !saltIndex || !redirectUrl || !callbackUrl) {
+        if (!razorpayKeyId || !razorpayKeySecret) {
             return res.status(500).json({
                 message: MESSAGES.PAYMENT_INIT_FAILED,
-                details: 'PhonePe environment variables are not fully configured'
+                details: 'Razorpay environment variables are not fully configured'
             });
         }
 
-        const merchantTransactionId = `${sellRequest._id}-${Date.now()}`;
+        const auth = Buffer.from(`${razorpayKeyId}:${razorpayKeySecret}`).toString('base64');
 
-        const payload = {
-            merchantId,
-            merchantTransactionId,
+        const orderPayload = {
             amount: amountInPaise,
-            merchantUserId: sellRequest.requestedBy?.toString(),
-            mobileNumber: sellRequest.customerContact,
-            paymentInstrument: {
-                type: 'PAY_PAGE'
-            },
-            redirectUrl,
-            callbackUrl
+            currency: 'INR',
+            receipt: sellRequest.billNumber || `sell_${sellRequest._id}`,
+            notes: {
+                sellRequestId: sellRequest._id.toString(),
+                customerName: sellRequest.customerName || '',
+                customerContact: sellRequest.customerContact || ''
+            }
         };
 
-        const payloadBase64 = Buffer.from(JSON.stringify(payload)).toString('base64');
-        const endpoint = '/pg/v1/pay';
-        const checksum = crypto
-            .createHash('sha256')
-            .update(payloadBase64 + endpoint + saltKey)
-            .digest('hex') + '###' + saltIndex;
-
-        const phonePeResponse = await axios.post(
-            `${baseUrl}${endpoint}`,
-            { request: payloadBase64 },
+        const razorpayResponse = await axios.post(
+            'https://api.razorpay.com/v1/orders',
+            orderPayload,
             {
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-VERIFY': checksum,
-                    'X-MERCHANT-ID': merchantId
+                    'Authorization': `Basic ${auth}`
                 }
             }
         );
 
-        const data = phonePeResponse.data;
-        if (!data || data.success !== true) {
-            return res.status(400).json({
-                message: MESSAGES.PAYMENT_INIT_FAILED,
-                details: data?.message || 'Unknown error from PhonePe'
-            });
-        }
+        const order = razorpayResponse.data;
 
         // Save payment info on sell request
         sellRequest.paymentStatus = 'pending';
-        sellRequest.paymentProvider = 'PHONEPE';
-        sellRequest.paymentOrderId = merchantTransactionId;
-        sellRequest.paymentMeta = data;
+        sellRequest.paymentProvider = 'RAZORPAY';
+        sellRequest.paymentOrderId = order.id;
+        sellRequest.paymentMeta = order;
         await sellRequest.save();
 
-        const redirectInfoUrl = data.data?.instrumentResponse?.redirectInfo?.url;
         return res.json({
-            message: 'PhonePe payment initiated',
-            redirectUrl: redirectInfoUrl,
-            merchantTransactionId
+            message: 'Razorpay order created',
+            orderId: order.id,
+            amount: order.amount,
+            currency: order.currency,
+            razorpayKeyId,
+            sellRequestId: sellRequest._id
         });
     } catch (error) {
-        console.error('PhonePe initiate error:', error.response?.data || error.message);
+        console.error('Razorpay initiate error:', error.response?.data || error.message);
         return res.status(500).json({
             message: MESSAGES.PAYMENT_INIT_FAILED,
             error: error.response?.data || error.message

@@ -44,7 +44,7 @@ const sellRequestSchema = new mongoose.Schema({
         enum: ['pending', 'approved', 'rejected'],
         default: 'pending'
     },
-    // Payment tracking for PhonePe / other gateways
+    // Payment tracking for Razorpay / other gateways
     paymentStatus: {
         type: String,
         enum: ['not_started', 'pending', 'success', 'failed'],
